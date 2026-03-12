@@ -1,17 +1,17 @@
 import { Request, Response } from "express";
 import { inject, injectable } from "tsyringe";
-import { IStudentsController } from "../../core/interfaces/controllers/IStudentsController";
-import { IStudentsService } from "../../core/interfaces/services/IStudentsService";
-import { TYPES } from "../../core/types";
-import { handleControllerError, sendResponse } from "../../utils/response";
-import { StatusCode } from "../../enums/statusCode";
-import { MESSAGES } from "../../const/messages";
+import { IStudentsController } from "../core/interfaces/controllers/IStudentsController";
+import { IStudentsService } from "../core/interfaces/services/IStudentsService";
+import { TYPES } from "../core/types";
+import { handleControllerError, sendResponse } from "../utils/response";
+import { StatusCode } from "../enums/statusCode";
+import { MESSAGES } from "../const/messages";
 import {
   validateCreateStudent,
   validateStudentsQuery,
   validateUpdateStudent,
-} from "./students.validator";
-import { CreateStudentDTO, StudentQueryDTO, UpdateStudentDTO } from "./students.dto";
+} from "../validator/students.validator";
+import { CreateStudentDTO, StudentQueryDTO, UpdateStudentDTO } from "../dtos/students/students.dto";
 
 interface AuthenticatedRequest extends Request {
   userId?: string;

@@ -1,5 +1,5 @@
 import { FilterQuery, ProjectionType } from "mongoose";
-import { IStudent, StudentDocument } from "../../../modules/students/students.model";
+import { IStudent, StudentDocument } from "../../../models/students.model";
 
 export interface IStudentsRepository {
   create(data: Partial<IStudent>): Promise<IStudent>;

@@ -1,14 +1,14 @@
 import { inject, injectable } from "tsyringe";
 import mongoose from "mongoose";
-import { IStudentsService } from "../../core/interfaces/services/IStudentsService";
-import { IStudentsRepository } from "../../core/interfaces/repository/IStudentsRepository";
-import { TYPES } from "../../core/types";
-import { CreateStudentDTO, StudentQueryDTO, UpdateStudentDTO } from "./students.dto";
-import { StudentResponseDTO, StudentsListResponseDTO } from "./students.dto";
-import { throwError } from "../../utils/response";
-import { MESSAGES } from "../../const/messages";
-import { StatusCode } from "../../enums/statusCode";
-import { IStudent } from "./students.model";
+import { IStudentsService } from "../core/interfaces/services/IStudentsService";
+import { IStudentsRepository } from "../core/interfaces/repository/IStudentsRepository";
+import { TYPES } from "../core/types";
+import { CreateStudentDTO, StudentQueryDTO, UpdateStudentDTO } from "../dtos/students/students.dto";
+import { StudentResponseDTO, StudentsListResponseDTO } from "../dtos/students/students.dto";
+import { throwError } from "../utils/response";
+import { MESSAGES } from "../const/messages";
+import { StatusCode } from "../enums/statusCode";
+import { IStudent } from "../models/students.model";
 
 @injectable()
 export class StudentsService implements IStudentsService {

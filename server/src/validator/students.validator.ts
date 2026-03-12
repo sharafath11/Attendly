@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
-import { throwError } from "../../utils/response";
-import { MESSAGES } from "../../const/messages";
-import { CreateStudentDTO, StudentQueryDTO, UpdateStudentDTO } from "./students.dto";
-import { StatusCode } from "../../enums/statusCode";
+import { throwError } from "../utils/response";
+import { MESSAGES } from "../const/messages";
+import { CreateStudentDTO, StudentQueryDTO, UpdateStudentDTO } from "../dtos/students/students.dto";
+import { StatusCode } from "../enums/statusCode";
 
 const PHONE_REGEX = /^\+?[1-9]\d{7,14}$/;
 

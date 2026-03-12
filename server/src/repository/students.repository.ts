@@ -1,6 +1,6 @@
 import { FilterQuery, ProjectionType } from "mongoose";
-import { IStudentsRepository } from "../../core/interfaces/repository/IStudentsRepository";
-import { StudentModel, IStudent, StudentDocument } from "./students.model";
+import { IStudentsRepository } from "../core/interfaces/repository/IStudentsRepository";
+import { StudentModel, IStudent, StudentDocument } from "../models/students.model";
 
 interface FindManyOptions {
   page: number;

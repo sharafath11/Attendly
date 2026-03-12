@@ -1,6 +1,6 @@
-import { CreateStudentDTO, StudentsListResponseDTO, UpdateStudentDTO } from "../../../modules/students/students.dto";
-import { StudentResponseDTO } from "../../../modules/students/students.dto";
-import { StudentQueryDTO } from "../../../modules/students/students.dto";
+import { CreateStudentDTO, StudentsListResponseDTO, UpdateStudentDTO } from "../../../dtos/students/students.dto";
+import { StudentResponseDTO } from "../../../dtos/students/students.dto";
+import { StudentQueryDTO } from "../../../dtos/students/students.dto";
 
 export interface IStudentsService {
   createStudent(userId: string, payload: CreateStudentDTO): Promise<StudentResponseDTO>;
