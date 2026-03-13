@@ -1,4 +1,5 @@
 import { inject, injectable } from "tsyringe";
+import mongoose from "mongoose";
 import { IBatchesService } from "../core/interfaces/services/IBatchesService";
 import { IBatchesRepository } from "../core/interfaces/repository/IBatchesRepository";
 import { TYPES } from "../core/types";
@@ -45,7 +46,7 @@ export class BatchesService implements IBatchesService {
       session: payload.session,
       scheduleTime: payload.scheduleTime,
       days: payload.days,
-      userId,
+      userId: new mongoose.Types.ObjectId(userId),
     } as Partial<IBatch>);
 
     return this.mapBatch(created, 0);

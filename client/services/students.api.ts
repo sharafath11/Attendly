@@ -3,6 +3,7 @@ import { CreateStudentPayload, StudentsQuery, UpdateStudentPayload } from "@/typ
 
 export const studentsApi = {
   getStudents: (params?: StudentsQuery) => getRequest("/students", params),
+  getStudentById: (id: string) => getRequest(`/students/${id}`),
   createStudent: (payload: CreateStudentPayload) => postRequest("/students", payload),
   updateStudent: (id: string, payload: UpdateStudentPayload) => putRequest(`/students/${id}`, payload),
   deleteStudent: (id: string) => deleteRequest(`/students/${id}`),

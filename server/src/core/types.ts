@@ -8,4 +8,10 @@ export const TYPES = {
     IBatchesController: Symbol("IBatchesController"),
     IBatchesService: Symbol("IBatchesService"),
     IBatchesRepository: Symbol("IBatchesRepository"),
+    IAttendanceController: Symbol("IAttendanceController"),
+    IAttendanceService: Symbol("IAttendanceService"),
+    IAttendanceRepository: Symbol("IAttendanceRepository"),
+    IFeesController: Symbol("IFeesController"),
+    IFeesService: Symbol("IFeesService"),
+    IFeesRepository: Symbol("IFeesRepository"),
 } as const

@@ -14,6 +14,7 @@ export type Student = {
 export type StudentsQuery = {
   search?: string;
   batchId?: string;
+  session?: string;
   page?: number;
   limit?: number;
 };

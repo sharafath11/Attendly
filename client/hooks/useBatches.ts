@@ -13,6 +13,15 @@ export const useBatches = (filters?: BatchFilters) => {
   });
 };
 
+export const useBatch = (id?: string) => {
+  return useQuery({
+    queryKey: ["batches", "detail", id],
+    queryFn: () => batchesService.getBatchById(id as string),
+    enabled: Boolean(id),
+    keepPreviousData: true,
+  });
+};
+
 export const useCreateBatch = () => {
   const queryClient = useQueryClient();
   return useMutation({

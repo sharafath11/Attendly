@@ -73,8 +73,45 @@ export class StudentsService implements IStudentsService {
       filter.name = { $regex: query.search, $options: "i" };
     }
 
+    let sessionBatchIds: mongoose.Types.ObjectId[] | null = null;
+    if (query.session) {
+      const BatchModel = mongoose.models.Batch as mongoose.Model<any> | undefined;
+      if (!BatchModel) {
+        throwError("Batch model is not registered", StatusCode.INTERNAL_SERVER_ERROR);
+      }
+
+      const sessionBatches = await BatchModel.find({ userId, session: query.session })
+        .select("_id")
+        .lean()
+        .exec();
+      sessionBatchIds = sessionBatches.map((batch) => batch._id as mongoose.Types.ObjectId);
+
+      if (sessionBatchIds.length === 0) {
+        return {
+          students: [],
+          total: 0,
+          page,
+          pages: 1,
+        };
+      }
+    }
+
     if (query.batchId) {
-      filter.batchId = new mongoose.Types.ObjectId(query.batchId);
+      const batchObjectId = new mongoose.Types.ObjectId(query.batchId);
+      if (sessionBatchIds) {
+        const inSession = sessionBatchIds.some((id) => id.toString() === batchObjectId.toString());
+        if (!inSession) {
+          return {
+            students: [],
+            total: 0,
+            page,
+            pages: 1,
+          };
+        }
+      }
+      filter.batchId = batchObjectId;
+    } else if (sessionBatchIds) {
+      filter.batchId = { $in: sessionBatchIds };
     }
 
     const { students, total } = await this._studentsRepository.findMany(filter, {

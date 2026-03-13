@@ -39,6 +39,7 @@ export interface StudentsListResponseDTO {
 export interface StudentQueryDTO {
   search?: string;
   batchId?: string;
+  session?: string;
   page?: number;
   limit?: number;
 }

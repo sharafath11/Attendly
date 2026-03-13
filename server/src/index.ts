@@ -4,6 +4,8 @@ import "./core/di/container";
 import authRoutes from "./routes/auth.Routes";
 import studentRoutes from "./routes/students.Routes";
 import batchRoutes from "./routes/batches.Routes";
+import attendanceRoutes from "./routes/attendance.Routes";
+import feesRoutes from "./routes/fees.Routes";
 import { connectDB } from "./config/database";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -25,6 +27,8 @@ connectDB();
 app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/batches", batchRoutes);
+app.use("/api/attendance", attendanceRoutes);
+app.use("/api/fees", feesRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));

@@ -75,6 +75,7 @@ export const validateStudentsQuery = (query: StudentQueryDTO): StudentQueryDTO =
   return {
     search: query.search,
     batchId: query.batchId,
+    session: query.session,
     page,
     limit,
   };

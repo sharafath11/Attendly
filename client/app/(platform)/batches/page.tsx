@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Filter, Plus } from "lucide-react";
 import Modal from "@/components/dashboard/Modal";
 import FormInput from "@/components/dashboard/FormInput";
@@ -12,6 +13,7 @@ import {
   useDeleteBatch,
   useUpdateBatch,
 } from "@/hooks/useBatches";
+import BatchCard from "@/components/batches/BatchCard";
 import type { Batch, CreateBatchPayload } from "@/types/batches/batchTypes";
 
 const mediumOptions = ["English", "Malayalam"] as const;
@@ -40,10 +42,10 @@ const emptyForm: BatchFormValues = {
   days: [],
 };
 
-const formatDays = (days: string[]) => days.join(" ");
 const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 export default function BatchesPage() {
+  const router = useRouter();
   const [mediumFilter, setMediumFilter] = useState(filterOptions.medium[0]);
   const [sessionFilter, setSessionFilter] = useState(filterOptions.session[0]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -204,45 +206,14 @@ export default function BatchesPage() {
       ) : (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {batches.map((batch) => (
-            <div key={batch.id} className="rounded-xl border border-border bg-card p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-base font-semibold text-foreground">{batch.batchName}</h3>
-                  <p className="text-xs text-muted-foreground">{batch.classLevel}</p>
-                </div>
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                  {batch.studentCount} Students
-                </span>
-              </div>
-              <div className="mt-4 space-y-2 text-sm text-muted-foreground">
-                <p className="text-foreground">
-                  {batch.medium} Medium
-                </p>
-                <p className="text-foreground">
-                  {batch.session} Session
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">Schedule:</span> {batch.scheduleTime} | {formatDays(batch.days)}
-                </p>
-              </div>
-              <div className="mt-4 flex gap-2">
-                <button
-                  onClick={() => openEditModal(batch)}
-                  className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => openDeleteConfirm(batch)}
-                  className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary"
-                >
-                  Delete
-                </button>
-                <button className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary">
-                  View Students
-                </button>
-              </div>
-            </div>
+            <BatchCard
+              key={batch.id}
+              batch={batch}
+              onEdit={openEditModal}
+              onDelete={openDeleteConfirm}
+              onViewStudents={(selected) => router.push(`/batches/${selected.id}/students`)}
+              onMarkAttendance={(selected) => router.push(`/attendance/${selected.id}`)}
+            />
           ))}
         </div>
       )}

@@ -18,6 +18,18 @@ import { BatchesService } from "../../services/batches.service";
 import { IBatchesController } from "../interfaces/controllers/IBatchesController";
 import { IBatchesRepository } from "../interfaces/repository/IBatchesRepository";
 import { IBatchesService } from "../interfaces/services/IBatchesService";
+import { AttendanceController } from "../../controller/attendance.controller";
+import { AttendanceRepository } from "../../repository/attendance.repository";
+import { AttendanceService } from "../../services/attendance.service";
+import { IAttendanceController } from "../interfaces/controllers/IAttendanceController";
+import { IAttendanceRepository } from "../interfaces/repository/IAttendanceRepository";
+import { IAttendanceService } from "../interfaces/services/IAttendanceService";
+import { FeesController } from "../../controller/fees.controller";
+import { FeesRepository } from "../../repository/fees.repository";
+import { FeesService } from "../../services/fees.service";
+import { IFeesController } from "../interfaces/controllers/IFeesController";
+import { IFeesRepository } from "../interfaces/repository/IFeesRepository";
+import { IFeesService } from "../interfaces/services/IFeesService";
 
 container.registerSingleton<IAuthService>(TYPES.IAuthServices, AuthService);
 container.registerSingleton<IAuthController>(TYPES.IAuthController, AuthController);
@@ -30,5 +42,13 @@ container.registerSingleton<IStudentsRepository>(TYPES.IStudentsRepository, Stud
 container.registerSingleton<IBatchesService>(TYPES.IBatchesService, BatchesService);
 container.registerSingleton<IBatchesController>(TYPES.IBatchesController, BatchesController);
 container.registerSingleton<IBatchesRepository>(TYPES.IBatchesRepository, BatchesRepository);
+
+container.registerSingleton<IAttendanceService>(TYPES.IAttendanceService, AttendanceService);
+container.registerSingleton<IAttendanceController>(TYPES.IAttendanceController, AttendanceController);
+container.registerSingleton<IAttendanceRepository>(TYPES.IAttendanceRepository, AttendanceRepository);
+
+container.registerSingleton<IFeesService>(TYPES.IFeesService, FeesService);
+container.registerSingleton<IFeesController>(TYPES.IFeesController, FeesController);
+container.registerSingleton<IFeesRepository>(TYPES.IFeesRepository, FeesRepository);
 
 export { container };
