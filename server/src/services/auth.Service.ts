@@ -37,8 +37,6 @@ export class AuthService implements IAuthService {
       name: user.username,
       email: user.email,
       phone: user.phone,
-      status: "verified",
-      subscriptionStatus: "active",
       blocked: false,
     });
   }
@@ -57,8 +55,6 @@ export class AuthService implements IAuthService {
           name: owner.username,
           email: owner.email,
           phone: owner.phone,
-          status: "verified",
-          subscriptionStatus: "active",
           blocked: false,
         });
         center = await CenterModel.findById(centerId).lean().exec();
@@ -66,21 +62,6 @@ export class AuthService implements IAuthService {
     }
     if (center?.blocked || center?.subscriptionStatus === "blocked") {
       throwError("Your center has been blocked by admin", StatusCode.FORBIDDEN);
-    }
-  }
-
-  private async ensureCenterActiveForTeacher(user: IUser): Promise<void> {
-    if (user.role !== "teacher") return;
-    const centerId = (user.centerId ?? user._id.toString()).toString();
-    const center = await CenterModel.findById(centerId).lean().exec();
-    if (!center) {
-      throwError("Center not found", StatusCode.NOT_FOUND);
-    }
-    if (center.blocked) {
-      throwError("Your center account has been blocked.", StatusCode.FORBIDDEN);
-    }
-    if (center.subscriptionStatus !== "active") {
-      throwError("Center subscription inactive. Contact center owner.", StatusCode.FORBIDDEN);
     }
   }
 
@@ -97,7 +78,6 @@ export class AuthService implements IAuthService {
     if (user.status === "disabled") throwError(MESSAGES.AUTH.BLOCKED);
     if (user.status && user.status !== "active") throwError("Account not approved yet.", StatusCode.FORBIDDEN);
     await this.ensureCenterNotBlocked(user);
-    await this.ensureCenterActiveForTeacher(user);
 
     const rawRole = (user.role ?? "center_owner") as string;
     const role = rawRole === "owner" ? "center_owner" : (rawRole as "center_owner" | "teacher" | "super_admin");

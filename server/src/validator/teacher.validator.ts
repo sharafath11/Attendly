@@ -5,6 +5,17 @@ import { CreateTeacherDTO, UpdateTeacherDTO, UpdateTeacherStatusDTO } from "../d
 import { MESSAGES } from "../const/messages";
 
 const PHONE_REGEX = /^\+?[1-9]\d{7,14}$/;
+
+const ALLOWED_SUBJECTS = [
+  "Malayalam",
+  "English",
+  "Maths",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "Computer Science",
+];
+
 const validateSubjects = (subjects?: string[]): string[] | undefined => {
   if (!subjects) return undefined;
   if (!Array.isArray(subjects)) {
@@ -13,6 +24,17 @@ const validateSubjects = (subjects?: string[]): string[] | undefined => {
   const normalized = subjects
     .map((subject) => (typeof subject === "string" ? subject.trim() : ""))
     .filter((subject) => subject.length > 0);
+
+  const invalid = normalized.filter((subject) => !ALLOWED_SUBJECTS.includes(subject));
+  if (invalid.length > 0) {
+    throwError(
+      `Invalid subjects: ${invalid.join(
+        ", "
+      )}. Allowed subjects are: ${ALLOWED_SUBJECTS.join(", ")}`,
+      StatusCode.BAD_REQUEST
+    );
+  }
+
   return normalized;
 };
 

@@ -64,7 +64,7 @@ export class TeacherPaymentsRepository
       return this.mapRecord(populated ?? created.toObject());
     } catch (error) {
       if (error instanceof Error && (error as any).code === 11000) {
-        throw this.handleError(error, "Payment already recorded for this teacher and month");
+        throw new Error("Payment already recorded for this teacher and month");
       }
       throw this.handleError(error, MESSAGES.REPOSITORY.CREATE_ERROR);
     }

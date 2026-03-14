@@ -8,13 +8,10 @@ export const startSubscriptionExpiryJob = () => {
     await CenterModel.updateMany(
       {
         subscriptionEndDate: { $lt: now },
-        subscriptionStatus: { $ne: "blocked" },
+        subscriptionStatus: { $nin: ["expired", "blocked"] },
       },
       {
-        subscriptionStatus: "blocked",
-        blocked: true,
-        blockedReason: "Subscription expired",
-        blockedAt: now,
+        subscriptionStatus: "expired",
       }
     );
   };

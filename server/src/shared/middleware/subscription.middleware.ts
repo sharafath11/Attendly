@@ -18,17 +18,24 @@ export const requireActiveSubscription = async (req: Request, res: Response, nex
   }
 
   if (center.blocked) {
-    return res.status(StatusCode.FORBIDDEN).json({
-      message: "Your center account has been blocked.",
-      reason: center.blockedReason ?? "Contact platform administrator",
-    });
+    return sendResponse(
+      res,
+      StatusCode.FORBIDDEN,
+      "Center blocked by administrator",
+      false,
+      {
+        reason: center.blockedReason ?? "Account blocked",
+      }
+    );
   }
 
   if (center.subscriptionStatus !== "active") {
-    return res.status(StatusCode.FORBIDDEN).json({
-      message: "Your subscription is not active.",
-      action: "Please complete payment and wait for admin verification.",
-    });
+    return sendResponse(
+      res,
+      StatusCode.FORBIDDEN,
+      "Subscription inactive. Please contact administrator.",
+      false
+    );
   }
 
   return next();

@@ -19,6 +19,10 @@ export const validateCenterRegistration = (payload: CenterRegistrationDTO): void
     throwError(MESSAGES.COMMON.MISSING_FIELDS, StatusCode.BAD_REQUEST);
   }
 
+  if (payload.password.length < 8) {
+    throwError("Password must be at least 8 characters long", StatusCode.BAD_REQUEST);
+  }
+
   if (!/\S+@\S+\.\S+/.test(payload.email)) {
     throwError("Invalid email address", StatusCode.BAD_REQUEST);
   }

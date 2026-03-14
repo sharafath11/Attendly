@@ -45,6 +45,7 @@ const centerSchema: Schema<CenterDocument> = new Schema(
       default: "pending_payment",
       index: true,
     },
+
     subscriptionStartDate: { type: Date },
     subscriptionEndDate: { type: Date },
     blocked: { type: Boolean, default: false, index: true },

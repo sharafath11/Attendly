@@ -26,6 +26,7 @@ userSchema.index(
 // Enforce unique teacher usernames within a center.
 userSchema.index({ centerId: 1, username: 1 }, { unique: true });
 
+
 // Faster multi-tenant role queries.
 userSchema.index({ centerId: 1, role: 1 });
 

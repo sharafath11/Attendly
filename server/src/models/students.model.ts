@@ -32,5 +32,5 @@ const studentSchema: Schema<StudentDocument> = new Schema(
   { timestamps: true }
 );
 
-
+studentSchema.index({ centerId: 1 });
 export const StudentModel: Model<StudentDocument> = mongoose.model<StudentDocument>("Student", studentSchema);
