@@ -9,10 +9,12 @@ import { showErrorToast, showSuccessToast } from "@/utils/toast";
 import { useBatch } from "@/hooks/useBatches";
 import { useStudents } from "@/hooks/useStudents";
 import { useAttendanceByDate, useSaveAttendance } from "@/hooks/useAttendance";
+import { useSubscription } from "@/components/dashboard/SubscriptionContext";
 
 const getTodayDate = () => new Date().toISOString().split("T")[0];
 
 export default function BatchAttendancePage() {
+  const { isActive } = useSubscription();
   const params = useParams();
   const batchId = typeof params?.batchId === "string" ? params.batchId : "";
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
@@ -37,15 +39,15 @@ export default function BatchAttendancePage() {
 
   const saveAttendance = useSaveAttendance();
 
-  const [attendance, setAttendance] = useState<Record<string, "Present" | "Absent">>({});
+  const [attendance, setAttendance] = useState<Record<string, "present" | "absent" | "leave">>({});
   const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
     if (students.length === 0) return;
     const recordMap = new Map(records.map((record) => [record.studentId, record.status]));
-    const next: Record<string, "Present" | "Absent"> = {};
+    const next: Record<string, "present" | "absent" | "leave"> = {};
     students.forEach((student) => {
-      next[student.id] = (recordMap.get(student.id) as "Present" | "Absent") ?? "Present";
+      next[student.id] = (recordMap.get(student.id) as "present" | "absent" | "leave") ?? "present";
     });
     setAttendance(next);
     setIsLocked(records.length > 0);
@@ -63,7 +65,7 @@ export default function BatchAttendancePage() {
       date: selectedDate,
       records: students.map((student) => ({
         studentId: student.id,
-        status: attendance[student.id] ?? "Present",
+        status: attendance[student.id] ?? "present",
       })),
     };
 
@@ -107,7 +109,7 @@ export default function BatchAttendancePage() {
               className="mt-1 w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </div>
-          <Button onClick={openConfirm} isLoading={saveAttendance.isPending}>
+          <Button onClick={openConfirm} isLoading={saveAttendance.isPending} disabled={!isActive}>
             Save Attendance
           </Button>
           <Button
@@ -141,7 +143,7 @@ export default function BatchAttendancePage() {
           <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} isLoading={saveAttendance.isPending}>
+          <Button onClick={handleSave} isLoading={saveAttendance.isPending} disabled={!isActive}>
             Confirm Save
           </Button>
         </div>

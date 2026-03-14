@@ -14,10 +14,10 @@ export class BatchesRepository
     super(BatchModel);
   }
 
-  async findBatchesByUser(userId: string, filters: BatchFiltersDTO): Promise<IBatch[]> {
+  async findBatchesByUser(centerId: string, filters: BatchFiltersDTO): Promise<IBatch[]> {
     try {
       const query: FilterQuery<BatchDocument> = {
-        userId: new mongoose.Types.ObjectId(userId),
+        $or: [{ centerId: new mongoose.Types.ObjectId(centerId) }, { userId: centerId }],
       };
 
       if (filters.medium) {
@@ -38,10 +38,13 @@ export class BatchesRepository
     }
   }
 
-  async findBatchByIdAndUser(id: string, userId: string): Promise<IBatch | null> {
+  async findBatchByIdAndUser(id: string, centerId: string): Promise<IBatch | null> {
     try {
       return (await this.model
-        .findOne({ _id: id, userId: new mongoose.Types.ObjectId(userId) })
+        .findOne({
+          _id: id,
+          $or: [{ centerId: new mongoose.Types.ObjectId(centerId) }, { userId: centerId }],
+        })
         .lean()
         .exec()) as IBatch | null;
     } catch (error) {
@@ -51,12 +54,19 @@ export class BatchesRepository
 
   async updateBatchByIdAndUser(
     id: string,
-    userId: string,
+    centerId: string,
     data: Partial<IBatch>
   ): Promise<IBatch | null> {
     try {
       return (await this.model
-        .findOneAndUpdate({ _id: id, userId: new mongoose.Types.ObjectId(userId) }, data, { new: true })
+        .findOneAndUpdate(
+          {
+            _id: id,
+            $or: [{ centerId: new mongoose.Types.ObjectId(centerId) }, { userId: centerId }],
+          },
+          data,
+          { new: true }
+        )
         .lean()
         .exec()) as IBatch | null;
     } catch (error) {
@@ -64,11 +74,11 @@ export class BatchesRepository
     }
   }
 
-  async deleteBatchByIdAndUser(id: string, userId: string): Promise<boolean> {
+  async deleteBatchByIdAndUser(id: string, centerId: string): Promise<boolean> {
     try {
       const result = await this.model.findOneAndDelete({
         _id: id,
-        userId: new mongoose.Types.ObjectId(userId),
+        $or: [{ centerId: new mongoose.Types.ObjectId(centerId) }, { userId: centerId }],
       });
       return result !== null;
     } catch (error) {
@@ -76,7 +86,7 @@ export class BatchesRepository
     }
   }
 
-  async getStudentCountsForBatches(userId: string, batchIds: string[]): Promise<Map<string, number>> {
+  async getStudentCountsForBatches(centerId: string, batchIds: string[]): Promise<Map<string, number>> {
     try {
       if (batchIds.length === 0) return new Map();
 
@@ -85,7 +95,7 @@ export class BatchesRepository
       const counts = await StudentModel.aggregate([
         {
           $match: {
-            userId: new mongoose.Types.ObjectId(userId),
+            $or: [{ centerId: new mongoose.Types.ObjectId(centerId) }, { userId: centerId }],
             isDeleted: false,
             batchId: { $in: ids },
           },
@@ -104,11 +114,11 @@ export class BatchesRepository
     }
   }
 
-  async getStudentCountForBatch(userId: string, batchId: string): Promise<number> {
+  async getStudentCountForBatch(centerId: string, batchId: string): Promise<number> {
     try {
       return await StudentModel.countDocuments({
         batchId: new mongoose.Types.ObjectId(batchId),
-        userId: new mongoose.Types.ObjectId(userId),
+        $or: [{ centerId: new mongoose.Types.ObjectId(centerId) }, { userId: centerId }],
         isDeleted: false,
       });
     } catch (error) {

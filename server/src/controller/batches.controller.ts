@@ -8,10 +8,7 @@ import { StatusCode } from "../enums/statusCode";
 import { MESSAGES } from "../const/messages";
 import { validateBatchFilters, validateCreateBatch, validateUpdateBatch } from "../validator/batches.validator";
 import { BatchFiltersDTO, CreateBatchDTO, UpdateBatchDTO } from "../dtos/batches/batches.dto";
-
-interface AuthenticatedRequest extends Request {
-  userId?: string;
-}
+import { AuthenticatedRequest } from "../shared/middleware/role.middleware";
 
 @injectable()
 export class BatchesController implements IBatchesController {
@@ -21,13 +18,14 @@ export class BatchesController implements IBatchesController {
 
   async createBatch(req: Request, res: Response): Promise<void> {
     try {
-      const { userId } = req as AuthenticatedRequest;
-      if (!userId) {
+      const { centerId, userId } = req as AuthenticatedRequest;
+      const scopeId = centerId ?? userId;
+      if (!scopeId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
       const payload = validateCreateBatch(req.body as CreateBatchDTO);
-      const batch = await this._batchesService.createBatch(userId, payload);
+      const batch = await this._batchesService.createBatch(scopeId, payload);
 
       sendResponse(res, StatusCode.CREATED, "Batch created successfully", true, batch);
     } catch (error) {
@@ -37,13 +35,14 @@ export class BatchesController implements IBatchesController {
 
   async getBatches(req: Request, res: Response): Promise<void> {
     try {
-      const { userId } = req as AuthenticatedRequest;
-      if (!userId) {
+      const { centerId, userId } = req as AuthenticatedRequest;
+      const scopeId = centerId ?? userId;
+      if (!scopeId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
       const filters = validateBatchFilters(req.query as unknown as BatchFiltersDTO);
-      const result = await this._batchesService.getBatches(userId, filters);
+      const result = await this._batchesService.getBatches(scopeId, filters);
       sendResponse(res, StatusCode.OK, MESSAGES.COMMON.SUCCESS, true, result);
     } catch (error) {
       handleControllerError(res, error);
@@ -52,12 +51,13 @@ export class BatchesController implements IBatchesController {
 
   async getBatchById(req: Request, res: Response): Promise<void> {
     try {
-      const { userId } = req as AuthenticatedRequest;
-      if (!userId) {
+      const { centerId, userId } = req as AuthenticatedRequest;
+      const scopeId = centerId ?? userId;
+      if (!scopeId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
-      const batch = await this._batchesService.getBatchById(userId, req.params.id);
+      const batch = await this._batchesService.getBatchById(scopeId, req.params.id);
       sendResponse(res, StatusCode.OK, MESSAGES.COMMON.SUCCESS, true, batch);
     } catch (error) {
       handleControllerError(res, error);
@@ -66,13 +66,14 @@ export class BatchesController implements IBatchesController {
 
   async updateBatch(req: Request, res: Response): Promise<void> {
     try {
-      const { userId } = req as AuthenticatedRequest;
-      if (!userId) {
+      const { centerId, userId } = req as AuthenticatedRequest;
+      const scopeId = centerId ?? userId;
+      if (!scopeId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
       const payload = validateUpdateBatch(req.body as UpdateBatchDTO);
-      const batch = await this._batchesService.updateBatch(userId, req.params.id, payload);
+      const batch = await this._batchesService.updateBatch(scopeId, req.params.id, payload);
       sendResponse(res, StatusCode.OK, "Batch updated successfully", true, batch);
     } catch (error) {
       handleControllerError(res, error);
@@ -81,12 +82,13 @@ export class BatchesController implements IBatchesController {
 
   async deleteBatch(req: Request, res: Response): Promise<void> {
     try {
-      const { userId } = req as AuthenticatedRequest;
-      if (!userId) {
+      const { centerId, userId } = req as AuthenticatedRequest;
+      const scopeId = centerId ?? userId;
+      if (!scopeId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
-      await this._batchesService.deleteBatch(userId, req.params.id);
+      await this._batchesService.deleteBatch(scopeId, req.params.id);
       sendResponse(res, StatusCode.OK, "Batch deleted successfully", true);
     } catch (error) {
       handleControllerError(res, error);

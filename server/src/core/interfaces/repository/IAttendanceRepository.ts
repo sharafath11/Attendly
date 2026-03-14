@@ -6,23 +6,55 @@ import {
 } from "../../../dtos/attendance/attendance.dto";
 
 export interface IAttendanceRepository {
-  getStudentAttendanceSummary(userId: string, studentId: string): Promise<StudentAttendanceSummaryDTO>;
-  getBatchAttendanceSummary(userId: string, batchId: string, dateFrom: Date): Promise<BatchAttendanceSummaryDTO>;
+  getStudentAttendanceSummary(centerId: string, studentId: string): Promise<StudentAttendanceSummaryDTO>;
+  getBatchAttendanceSummary(centerId: string, batchId: string, dateFrom: Date): Promise<BatchAttendanceSummaryDTO>;
   getLowAttendanceStudents(
-    userId: string,
+    centerId: string,
     batchId: string,
     dateFrom: Date,
     threshold: number
   ): Promise<LowAttendanceStudentDTO[]>;
   getAttendanceByBatchAndDate(
-    userId: string,
+    centerId: string,
     batchId: string,
     date: Date
   ): Promise<AttendanceRecordDTO[]>;
   upsertAttendanceByBatchAndDate(
-    userId: string,
+    centerId: string,
     batchId: string,
     date: Date,
-    records: AttendanceRecordDTO[]
+    records: AttendanceRecordDTO[],
+    markedBy: string
   ): Promise<void>;
+  upsertAttendanceRecord(
+    centerId: string,
+    studentId: string,
+    date: Date,
+    status: AttendanceRecordDTO["status"],
+    markedBy: string,
+    batchId?: string
+  ): Promise<void>;
+  getAttendanceHistory(
+    centerId: string,
+    filters: {
+      studentId?: string;
+      batchId?: string;
+      dateFrom?: Date;
+      dateTo?: Date;
+    }
+  ): Promise<
+    {
+      id: string;
+      studentId: string;
+      batchId: string;
+      date: string;
+      status: "present" | "absent" | "leave";
+      markedBy?: string;
+      createdAt?: Date;
+      updatedAt?: Date;
+      student?: { id: string; name: string };
+      batch?: { id: string; batchName: string };
+      marker?: { id: string; name: string; role?: string };
+    }[]
+  >;
 }

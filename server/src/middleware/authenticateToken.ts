@@ -20,8 +20,9 @@ export const authenticateToken = (
 
   try {
     const decoded = verifyAccessToken(accessToken) as TokenPayload;
-    
-    if (decoded?.id && decoded.role === 'user') {
+    console.log("decoded",decoded)
+    const role = decoded?.role === "owner" ? "center_owner" : decoded?.role;
+    if (decoded?.id && ["center_owner", "teacher", "super_admin"].includes(role)) {
       console.log("[Middleware] Access token valid for user:", decoded.id);
       return next();
     }

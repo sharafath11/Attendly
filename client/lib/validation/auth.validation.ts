@@ -34,9 +34,7 @@ export const validateLogin = (data: LoginFormData): LoginErrors => {
   const errors: LoginErrors = {};
 
   if (!data.email.trim()) {
-    errors.email = "Email is required";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    errors.email = "Please enter a valid email";
+    errors.email = "Email or username is required";
   }
 
   if (!data.password) {

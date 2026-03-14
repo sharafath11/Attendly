@@ -6,8 +6,11 @@ export function middleware(request: NextRequest) {
 
   const token = request.cookies.get("token")?.value
   const refreshToken = request.cookies.get("refreshToken")?.value
+  const adminToken = request.cookies.get("adminToken")?.value
+  const adminRefreshToken = request.cookies.get("adminRefreshToken")?.value
 
   const isAuthenticated = Boolean(token || refreshToken)
+  const isAdminAuthenticated = Boolean(adminToken || adminRefreshToken)
 
   const isAuthPage =
     pathname === "/login" || pathname === "/register"
@@ -15,17 +18,22 @@ export function middleware(request: NextRequest) {
   const isPublicPage = pathname === "/"
 
   const isDashboard = pathname.startsWith("/dashboard")
+  const isAdmin = pathname.startsWith("/admin")
+  const isAdminLogin = pathname === "/admin/login"
 
-  if (isAuthenticated) {
+  if (isAuthenticated || isAdminAuthenticated) {
     if (isAuthPage || isPublicPage) {
       return NextResponse.redirect(
         new URL("/dashboard", request.url)
       )
     }
+    if (isAdminLogin) {
+      return NextResponse.redirect(new URL("/admin/dashboard", request.url))
+    }
     return NextResponse.next()
   }
 
-  if (!isAuthenticated && isDashboard) {
+  if (!isAuthenticated && (isDashboard || isAdmin) && !isAdminLogin) {
     return NextResponse.redirect(
       new URL("/login", request.url)
     )
@@ -40,5 +48,7 @@ export const config = {
     "/login",
     "/register",
     "/dashboard/:path*",
+    "/admin/:path*",
+    "/blocked",
   ],
 }

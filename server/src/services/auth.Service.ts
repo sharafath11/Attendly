@@ -8,11 +8,14 @@ import { throwError } from "../utils/response";
 import { MESSAGES } from "../const/messages";
 import { UserResponseMapper } from "../dtos/user/userResponseMapper";
 import { IUserDto, IUserLoginDTO } from "../dtos/user/IUserDto";
+import { StatusCode } from "../enums/statusCode";
 
 import { generateAccessToken, generateRefreshToken } from "../lib/jwtToken";
 import { generateOtp, OTP_TTL_SECONDS } from "../utils/otp.util";
 import { redis } from "../utils/redis";
 import { sendEmailOtp } from "../utils/mail.util";
+import { CenterModel } from "../models/center.model";
+import { IUser } from "../types/userTypes";
 
 @injectable()
 export class AuthService implements IAuthService {
@@ -21,17 +24,89 @@ export class AuthService implements IAuthService {
     private  _authRepo: IAuthRepository
   ) {}
 
-  async login(email: string, password: string): Promise<IUserLoginDTO> {
-    const user = await this._authRepo.findOne({ email });
+  private async ensureCenterForOwner(user: IUser): Promise<void> {
+    const role = user.role ?? "center_owner";
+    if (role !== "center_owner") return;
+
+    const centerId = user._id.toString();
+    const existingCenter = await CenterModel.findById(centerId).lean().exec();
+    if (existingCenter) return;
+
+    await CenterModel.create({
+      _id: user._id,
+      name: user.username,
+      email: user.email,
+      phone: user.phone,
+      status: "verified",
+      subscriptionStatus: "active",
+      blocked: false,
+    });
+  }
+
+  private async ensureCenterNotBlocked(user: IUser): Promise<void> {
+    const role = user.role ?? "center_owner";
+    if (role !== "center_owner" && role !== "teacher") return;
+
+    const centerId = (user.centerId ?? user._id.toString()).toString();
+    let center = await CenterModel.findById(centerId).lean().exec();
+    if (!center) {
+      const owner = await this._authRepo.findById(centerId);
+      if (owner) {
+        await CenterModel.create({
+          _id: owner._id,
+          name: owner.username,
+          email: owner.email,
+          phone: owner.phone,
+          status: "verified",
+          subscriptionStatus: "active",
+          blocked: false,
+        });
+        center = await CenterModel.findById(centerId).lean().exec();
+      }
+    }
+    if (center?.blocked || center?.subscriptionStatus === "blocked") {
+      throwError("Your center has been blocked by admin", StatusCode.FORBIDDEN);
+    }
+  }
+
+  private async ensureCenterActiveForTeacher(user: IUser): Promise<void> {
+    if (user.role !== "teacher") return;
+    const centerId = (user.centerId ?? user._id.toString()).toString();
+    const center = await CenterModel.findById(centerId).lean().exec();
+    if (!center) {
+      throwError("Center not found", StatusCode.NOT_FOUND);
+    }
+    if (center.blocked) {
+      throwError("Your center account has been blocked.", StatusCode.FORBIDDEN);
+    }
+    if (center.subscriptionStatus !== "active") {
+      throwError("Center subscription inactive. Contact center owner.", StatusCode.FORBIDDEN);
+    }
+  }
+
+  async login(identifier: string, password: string): Promise<IUserLoginDTO> {
+    const user =
+      (await this._authRepo.findOne({ email: identifier })) ??
+      (await this._authRepo.findOne({ username: identifier }));
     if (!user) throwError(MESSAGES.AUTH.NOT_FOUND);
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throwError(MESSAGES.AUTH.INVALID_CREDENTIALS);
 
     if (!user.isVerified) throwError(MESSAGES.AUTH.AUTH_REQUIRED);
+    if (user.status === "disabled") throwError(MESSAGES.AUTH.BLOCKED);
+    if (user.status && user.status !== "active") throwError("Account not approved yet.", StatusCode.FORBIDDEN);
+    await this.ensureCenterNotBlocked(user);
+    await this.ensureCenterActiveForTeacher(user);
 
-    const token = generateAccessToken(user._id as unknown as string,"user");
-    const refreshToken = generateRefreshToken(user._id as unknown as string,"user");
+    const rawRole = (user.role ?? "center_owner") as string;
+    const role = rawRole === "owner" ? "center_owner" : (rawRole as "center_owner" | "teacher" | "super_admin");
+    const centerId = (user.centerId ?? user._id.toString()).toString();
+    if (!user.role || rawRole === "owner") {
+      await this._authRepo.update(user._id as unknown as string, { role: "center_owner" });
+    }
+    const token = generateAccessToken(user._id as unknown as string, role, centerId);
+    const refreshToken = generateRefreshToken(user._id as unknown as string, role, centerId);
     return UserResponseMapper.toLoginUserResponse(user,token,refreshToken);
   }
 
@@ -44,6 +119,12 @@ async signup(data: { name: string; email: string; password: string }):Promise<vo
   const hashedPassword = await bcrypt.hash(data.password, 10);
   if (existingUser && !existingUser.isVerified) {
     user = existingUser;
+    await this._authRepo.update(user._id as unknown as string, {
+      username: data.name,
+      password: hashedPassword,
+      role: user.role ?? "center_owner",
+      status: user.status ?? "active",
+    });
   } 
   else {
     user = await this._authRepo.create({
@@ -51,12 +132,23 @@ async signup(data: { name: string; email: string; password: string }):Promise<vo
       email: data.email,
       password: hashedPassword,
       isVerified: false,
+      role: "center_owner",
+      status: "active",
     });
   }
 
   if (!user) {
     throwError(MESSAGES.COMMON.SERVER_ERROR);
   }
+
+  if (!user.centerId) {
+    await this._authRepo.update(user._id as unknown as string, {
+      centerId: user._id.toString(),
+    });
+    user.centerId = user._id.toString();
+  }
+
+  await this.ensureCenterForOwner(user);
 
   const otp = generateOtp();
   const redisKey = `otp:register:${user._id}`;
@@ -129,8 +221,13 @@ async signup(data: { name: string; email: string; password: string }):Promise<vo
       let user = await this._authRepo.findOne({ email });
 
       if (user) {
-        const token = generateAccessToken(user._id as unknown as string, "user");
-        const refreshToken = generateRefreshToken(user._id as unknown as string, "user");
+        if (user.status === "disabled") throwError(MESSAGES.AUTH.BLOCKED);
+        if (user.status && user.status !== "active") throwError("Account not approved yet.", StatusCode.FORBIDDEN);
+        await this.ensureCenterNotBlocked(user);
+    const role = user.role ?? "center_owner";
+        const centerId = (user.centerId ?? user._id.toString()).toString();
+        const token = generateAccessToken(user._id as unknown as string, role, centerId);
+        const refreshToken = generateRefreshToken(user._id as unknown as string, role, centerId);
         return UserResponseMapper.toLoginUserResponse(user, token, refreshToken);
       }
 
@@ -141,12 +238,24 @@ async signup(data: { name: string; email: string; password: string }):Promise<vo
         password: randomPassword,
         isVerified: true,
         authProvider: "google",
+        role: "center_owner",
+        status: "active",
       });
 
       if (!user) throwError(MESSAGES.AUTH.USER_UPDATE_FAILED);
 
-      const token = generateAccessToken(user._id as unknown as string, "user");
-      const refreshToken = generateRefreshToken(user._id as unknown as string, "user");
+      if (!user.centerId) {
+        await this._authRepo.update(user._id as unknown as string, {
+          centerId: user._id.toString(),
+        });
+        user.centerId = user._id.toString();
+      }
+
+      await this.ensureCenterForOwner(user);
+
+      const centerId = (user.centerId ?? user._id.toString()).toString();
+      const token = generateAccessToken(user._id as unknown as string, "center_owner", centerId);
+      const refreshToken = generateRefreshToken(user._id as unknown as string, "center_owner", centerId);
       return UserResponseMapper.toLoginUserResponse(user, token, refreshToken);
     } catch (error: any) {
       if (error.message && !error.message.includes("Google")) {

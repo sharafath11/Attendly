@@ -11,11 +11,11 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
     super(FeeModel);
   }
 
-  async ensureFeesForMonth(userId: string, filters: FeeFiltersDTO): Promise<void> {
+  async ensureFeesForMonth(centerId: string, filters: FeeFiltersDTO): Promise<void> {
     try {
-      const userObjectId = new mongoose.Types.ObjectId(userId);
+      const centerObjectId = new mongoose.Types.ObjectId(centerId);
       const studentFilter: Record<string, unknown> = {
-        userId: userObjectId,
+        $or: [{ centerId: centerObjectId }, { userId: centerId }],
         isDeleted: false,
       };
       if (filters.batchId) {
@@ -33,7 +33,7 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
 
       const existingFees = await this.model
         .find({
-          userId: userObjectId,
+          $or: [{ centerId: centerObjectId }, { userId: centerId }],
           studentId: { $in: studentIds },
           month: filters.month,
           year: filters.year,
@@ -50,14 +50,15 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
         .map((student) => ({
           updateOne: {
             filter: {
-              userId: userObjectId,
+              $or: [{ centerId: centerObjectId }, { userId: centerId }],
               studentId: student._id,
               month: filters.month,
               year: filters.year,
             },
             update: {
               $setOnInsert: {
-                userId: userObjectId,
+                centerId: centerObjectId,
+                userId: centerObjectId,
                 studentId: student._id,
                 batchId: student.batchId,
                 month: filters.month,
@@ -79,11 +80,11 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
     }
   }
 
-  async getFees(userId: string, filters: FeeFiltersDTO): Promise<FeeRecordDTO[]> {
+  async getFees(centerId: string, filters: FeeFiltersDTO): Promise<FeeRecordDTO[]> {
     try {
-      const userObjectId = new mongoose.Types.ObjectId(userId);
+      const centerObjectId = new mongoose.Types.ObjectId(centerId);
       const match: Record<string, unknown> = {
-        userId: userObjectId,
+        $or: [{ centerId: centerObjectId }, { userId: centerId }],
         month: filters.month,
         year: filters.year,
       };
@@ -201,11 +202,12 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
     }
   }
 
-  async markFeePaid(userId: string, payload: MarkFeePaidDTO): Promise<void> {
+  async markFeePaid(centerId: string, payload: MarkFeePaidDTO): Promise<void> {
     try {
       const now = new Date();
+      const centerObjectId = new mongoose.Types.ObjectId(centerId);
       const existing = await this.model.findOne({
-        userId: new mongoose.Types.ObjectId(userId),
+        $or: [{ centerId: centerObjectId }, { userId: centerId }],
         studentId: new mongoose.Types.ObjectId(payload.studentId),
         batchId: new mongoose.Types.ObjectId(payload.batchId),
         month: payload.month,
@@ -216,7 +218,7 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
 
       await this.model.updateOne(
         {
-          userId: new mongoose.Types.ObjectId(userId),
+          $or: [{ centerId: centerObjectId }, { userId: centerId }],
           studentId: new mongoose.Types.ObjectId(payload.studentId),
           batchId: new mongoose.Types.ObjectId(payload.batchId),
           month: payload.month,
@@ -227,12 +229,12 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
             status: "Paid",
             paymentMethod: payload.paymentMethod,
             paidDate: now,
-            markedBy: existing?.markedBy ?? new mongoose.Types.ObjectId(userId),
-            editedBy: new mongoose.Types.ObjectId(userId),
+            markedBy: existing?.markedBy ?? centerObjectId,
+            editedBy: centerObjectId,
           },
           $push: {
             editHistory: {
-              editedBy: new mongoose.Types.ObjectId(userId),
+              editedBy: centerObjectId,
               previousStatus,
               newStatus: "Paid",
               note: "Marked as paid",
@@ -246,11 +248,12 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
     }
   }
 
-  async updateFeeStatus(userId: string, payload: UpdateFeeStatusDTO): Promise<void> {
+  async updateFeeStatus(centerId: string, payload: UpdateFeeStatusDTO): Promise<void> {
     try {
       const now = new Date();
+      const centerObjectId = new mongoose.Types.ObjectId(centerId);
       const existing = await this.model.findOne({
-        userId: new mongoose.Types.ObjectId(userId),
+        $or: [{ centerId: centerObjectId }, { userId: centerId }],
         studentId: new mongoose.Types.ObjectId(payload.studentId),
         batchId: new mongoose.Types.ObjectId(payload.batchId),
         month: payload.month,
@@ -261,7 +264,7 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
 
       await this.model.updateOne(
         {
-          userId: new mongoose.Types.ObjectId(userId),
+          $or: [{ centerId: centerObjectId }, { userId: centerId }],
           studentId: new mongoose.Types.ObjectId(payload.studentId),
           batchId: new mongoose.Types.ObjectId(payload.batchId),
           month: payload.month,
@@ -270,13 +273,13 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
         {
           $set: {
             status: payload.status,
-            editedBy: new mongoose.Types.ObjectId(userId),
+            editedBy: centerObjectId,
             changeNote: payload.changeNote,
             ...(payload.status === "Paid" ? { paidDate: now } : { paidDate: null }),
           },
           $push: {
             editHistory: {
-              editedBy: new mongoose.Types.ObjectId(userId),
+              editedBy: centerObjectId,
               previousStatus,
               newStatus: payload.status,
               note: payload.changeNote,
@@ -290,14 +293,14 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
     }
   }
 
-  async getPendingFees(userId: string, month?: number, year?: number): Promise<FeeRecordDTO[]> {
+  async getPendingFees(centerId: string, month?: number, year?: number): Promise<FeeRecordDTO[]> {
     try {
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
 
       const match: Record<string, unknown> = {
-        userId: new mongoose.Types.ObjectId(userId),
+        $or: [{ centerId: new mongoose.Types.ObjectId(centerId) }, { userId: centerId }],
       };
       if (month && year) {
         match.month = month;

@@ -8,6 +8,7 @@ export interface IStudent {
   batchId: mongoose.Types.ObjectId;
   monthlyFee: number;
   joinDate: Date;
+  centerId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   isDeleted: boolean;
   createdAt: Date;
@@ -24,13 +25,12 @@ const studentSchema: Schema<StudentDocument> = new Schema(
     batchId: { type: Schema.Types.ObjectId, required: true, ref: "Batch" },
     monthlyFee: { type: Number, required: true },
     joinDate: { type: Date, required: true },
+    centerId: { type: Schema.Types.ObjectId, required: true, ref: "Center", index: true },
     userId: { type: Schema.Types.ObjectId, required: true, ref: "User", index: true },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
 
-studentSchema.index({ userId: 1 });
-studentSchema.index({ batchId: 1 });
 
 export const StudentModel: Model<StudentDocument> = mongoose.model<StudentDocument>("Student", studentSchema);

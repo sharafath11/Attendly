@@ -27,12 +27,12 @@ const cookieOptions = {
 //   path: "/",                                     
 // };
 
-export const generateAccessToken = (id: string, role: string): string => {
-  const payload: TokenPayload = { id, role };
+export const generateAccessToken = (id: string, role: string, centerId?: string): string => {
+  const payload: TokenPayload = { id, userId: id, role, centerId };
   return jwt.sign(payload, SECRET_KEY, { expiresIn: ACCESS_EXPIRES_IN });
 };
-export const generateRefreshToken = (id: string, role: string): string => {
-  const payload: TokenPayload = { id, role };
+export const generateRefreshToken = (id: string, role: string, centerId?: string): string => {
+  const payload: TokenPayload = { id, userId: id, role, centerId };
   return jwt.sign(payload, REFRESH_KEY, { expiresIn: REFRESH_EXPIRES_IN });
 };
 export const verifyAccessToken = (token: string): TokenPayload | null => {
@@ -53,8 +53,8 @@ export const refreshAccessToken = (refreshToken: string) => {
     const decoded = verifyRefreshToken(refreshToken);
     if (!decoded) return null;
 
-    const newAccessToken = generateAccessToken(decoded.id, decoded.role);
-    const newRefreshToken = generateRefreshToken(decoded.id, decoded.role);
+    const newAccessToken = generateAccessToken(decoded.id, decoded.role, decoded.centerId);
+    const newRefreshToken = generateRefreshToken(decoded.id, decoded.role, decoded.centerId);
 
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   } catch (error) {
@@ -75,5 +75,17 @@ export const clearTokens = (res: Response) => {
   res.clearCookie("refreshToken", cookieOptions);
 };
 
+export const setAdminTokensInCookies = (
+  res: Response,
+  accessToken: string,
+  refreshToken: string
+) => {
+  res.cookie("adminToken", accessToken, cookieOptions);
+  res.cookie("adminRefreshToken", refreshToken, cookieOptions);
+};
 
+export const clearAdminTokens = (res: Response) => {
+  res.clearCookie("adminToken", cookieOptions);
+  res.clearCookie("adminRefreshToken", cookieOptions);
+};
 

@@ -41,4 +41,8 @@ export type User = {
   email: string;
   isVerified: boolean;
   authProvider?: "local" | "google";
+  role?: "center_owner" | "teacher" | "super_admin";
+  centerId?: string;
+  status?: "active" | "pending" | "disabled";
+  phone?: string;
 };

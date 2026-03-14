@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { attendanceService } from "@/services/attendance.service";
-import type { CreateAttendancePayload } from "@/types/attendance/attendanceTypes";
+import type { AttendanceHistoryFilters, CreateAttendancePayload } from "@/types/attendance/attendanceTypes";
 
 export const useStudentAttendanceSummary = (studentId?: string) => {
   return useQuery({
@@ -47,5 +47,13 @@ export const useSaveAttendance = () => {
         queryKey: ["attendance", "by-date", variables.batchId, variables.date],
       });
     },
+  });
+};
+
+export const useAttendanceHistory = (filters?: AttendanceHistoryFilters) => {
+  return useQuery({
+    queryKey: ["attendance", "history", filters],
+    queryFn: () => attendanceService.getAttendanceHistory(filters),
+    keepPreviousData: true,
   });
 };

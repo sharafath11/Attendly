@@ -6,4 +6,5 @@ export interface IAttendanceController {
   getLowAttendanceStudents(req: Request, res: Response): Promise<void>;
   getAttendanceByBatchAndDate(req: Request, res: Response): Promise<void>;
   saveAttendance(req: Request, res: Response): Promise<void>;
+  getAttendanceHistory(req: Request, res: Response): Promise<void>;
 }

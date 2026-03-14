@@ -21,11 +21,13 @@ export class AuthController implements IAuthController {
 
   async login(req: Request, res: Response): Promise<void> {
     try {
-      validateBodyFields(req, ["email", "password"])
-      const { email, password } = req.body;
-      if (!email || !password) throwError(MESSAGES.COMMON.MISSING_FIELDS,StatusCode.BAD_REQUEST);
+      const { email, username, password } = req.body ?? {};
+      if (!password || (!email && !username)) {
+        throwError(MESSAGES.COMMON.MISSING_FIELDS, StatusCode.BAD_REQUEST);
+      }
 
-      const result = await this._authServices.login(email, password);
+      const identifier = (email ?? username) as string;
+      const result = await this._authServices.login(identifier, password);
       setTokensInCookies(res,result.tocken,result.refreshToken)
       sendResponse(
         res,

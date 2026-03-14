@@ -2,6 +2,7 @@ import { inject, injectable } from "tsyringe";
 import mongoose from "mongoose";
 import { IBatchesService } from "../core/interfaces/services/IBatchesService";
 import { IBatchesRepository } from "../core/interfaces/repository/IBatchesRepository";
+import { ICenterRepository } from "../core/interfaces/repository/ICenterRepository";
 import { TYPES } from "../core/types";
 import {
   BatchFiltersDTO,
@@ -19,7 +20,9 @@ import { MESSAGES } from "../const/messages";
 export class BatchesService implements IBatchesService {
   constructor(
     @inject(TYPES.IBatchesRepository)
-    private _batchesRepository: IBatchesRepository
+    private _batchesRepository: IBatchesRepository,
+    @inject(TYPES.ICenterRepository)
+    private _centerRepository: ICenterRepository
   ) {}
 
   private mapBatch(batch: IBatch, studentCount: number): BatchResponseDTO {
@@ -38,7 +41,21 @@ export class BatchesService implements IBatchesService {
     };
   }
 
-  async createBatch(userId: string, payload: CreateBatchDTO): Promise<BatchResponseDTO> {
+  private async ensureActiveSubscription(centerId: string, message: string): Promise<void> {
+    const center = await this._centerRepository.findById(centerId);
+    if (!center) {
+      throwError("Center not found", StatusCode.NOT_FOUND);
+    }
+    if (center.blocked) {
+      throwError("Your center account has been blocked.", StatusCode.FORBIDDEN);
+    }
+    if (center.subscriptionStatus !== "active") {
+      throwError(message, StatusCode.FORBIDDEN);
+    }
+  }
+
+  async createBatch(centerId: string, payload: CreateBatchDTO): Promise<BatchResponseDTO> {
+    await this.ensureActiveSubscription(centerId, "Subscription inactive. Batch creation disabled.");
     const created = await this._batchesRepository.create({
       batchName: payload.batchName,
       classLevel: payload.classLevel,
@@ -46,16 +63,17 @@ export class BatchesService implements IBatchesService {
       session: payload.session,
       scheduleTime: payload.scheduleTime,
       days: payload.days,
-      userId: new mongoose.Types.ObjectId(userId),
+      centerId: new mongoose.Types.ObjectId(centerId),
+      userId: new mongoose.Types.ObjectId(centerId),
     } as Partial<IBatch>);
 
     return this.mapBatch(created, 0);
   }
 
-  async getBatches(userId: string, filters: BatchFiltersDTO): Promise<BatchesListResponseDTO> {
-    const batches = await this._batchesRepository.findBatchesByUser(userId, filters);
+  async getBatches(centerId: string, filters: BatchFiltersDTO): Promise<BatchesListResponseDTO> {
+    const batches = await this._batchesRepository.findBatchesByUser(centerId, filters);
     const ids = batches.map((batch) => batch._id.toString());
-    const counts = await this._batchesRepository.getStudentCountsForBatches(userId, ids);
+    const counts = await this._batchesRepository.getStudentCountsForBatches(centerId, ids);
 
     return {
       batches: batches.map((batch) => this.mapBatch(batch, counts.get(batch._id.toString()) ?? 0)),
@@ -63,23 +81,24 @@ export class BatchesService implements IBatchesService {
     };
   }
 
-  async getBatchById(userId: string, id: string): Promise<BatchResponseDTO> {
-    const batch = await this._batchesRepository.findBatchByIdAndUser(id, userId);
+  async getBatchById(centerId: string, id: string): Promise<BatchResponseDTO> {
+    const batch = await this._batchesRepository.findBatchByIdAndUser(id, centerId);
     if (!batch) {
       throwError("Batch not found", StatusCode.NOT_FOUND);
     }
 
-    const studentCount = await this._batchesRepository.getStudentCountForBatch(userId, batch._id.toString());
+    const studentCount = await this._batchesRepository.getStudentCountForBatch(centerId, batch._id.toString());
     return this.mapBatch(batch, studentCount);
   }
 
-  async updateBatch(userId: string, id: string, payload: UpdateBatchDTO): Promise<BatchResponseDTO> {
-    const existing = await this._batchesRepository.findBatchByIdAndUser(id, userId);
+  async updateBatch(centerId: string, id: string, payload: UpdateBatchDTO): Promise<BatchResponseDTO> {
+    await this.ensureActiveSubscription(centerId, "Subscription inactive. Batch update disabled.");
+    const existing = await this._batchesRepository.findBatchByIdAndUser(id, centerId);
     if (!existing) {
       throwError("Batch not found", StatusCode.NOT_FOUND);
     }
 
-    const updated = await this._batchesRepository.updateBatchByIdAndUser(id, userId, {
+    const updated = await this._batchesRepository.updateBatchByIdAndUser(id, centerId, {
       batchName: payload.batchName ?? existing.batchName,
       classLevel: payload.classLevel ?? existing.classLevel,
       medium: payload.medium ?? existing.medium,
@@ -92,17 +111,17 @@ export class BatchesService implements IBatchesService {
       throwError(MESSAGES.COMMON.SERVER_ERROR, StatusCode.INTERNAL_SERVER_ERROR);
     }
 
-    const studentCount = await this._batchesRepository.getStudentCountForBatch(userId, updated._id.toString());
+    const studentCount = await this._batchesRepository.getStudentCountForBatch(centerId, updated._id.toString());
     return this.mapBatch(updated, studentCount);
   }
 
-  async deleteBatch(userId: string, id: string): Promise<void> {
-    const existing = await this._batchesRepository.findBatchByIdAndUser(id, userId);
+  async deleteBatch(centerId: string, id: string): Promise<void> {
+    const existing = await this._batchesRepository.findBatchByIdAndUser(id, centerId);
     if (!existing) {
       throwError("Batch not found", StatusCode.NOT_FOUND);
     }
 
-    const deleted = await this._batchesRepository.deleteBatchByIdAndUser(id, userId);
+    const deleted = await this._batchesRepository.deleteBatchByIdAndUser(id, centerId);
     if (!deleted) {
       throwError(MESSAGES.COMMON.SERVER_ERROR, StatusCode.INTERNAL_SERVER_ERROR);
     }

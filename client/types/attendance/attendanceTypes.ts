@@ -32,7 +32,7 @@ export type LowAttendanceStudent = {
 
 export type AttendanceRecord = {
   studentId: string;
-  status: "Present" | "Absent";
+  status: "present" | "absent" | "leave";
 };
 
 export type AttendanceByDate = {
@@ -45,6 +45,37 @@ export type CreateAttendancePayload = {
   batchId: string;
   date: string;
   records: AttendanceRecord[];
+};
+
+export type AttendanceHistoryRecord = {
+  id: string;
+  studentId: string;
+  batchId: string;
+  date: string;
+  status: "present" | "absent" | "leave";
+  markedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  student?: {
+    id: string;
+    name: string;
+  };
+  batch?: {
+    id: string;
+    batchName: string;
+  };
+  marker?: {
+    id: string;
+    name: string;
+    role?: string;
+  };
+};
+
+export type AttendanceHistoryFilters = {
+  studentId?: string;
+  batchId?: string;
+  dateFrom?: string;
+  dateTo?: string;
 };
 
 export type ApiResponse<T> = {

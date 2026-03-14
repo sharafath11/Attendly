@@ -8,15 +8,13 @@ import { StatusCode } from "../enums/statusCode";
 import { MESSAGES } from "../const/messages";
 import {
   validateAttendanceQuery,
+  validateAttendanceHistoryFilters,
   validateBatchIdParam,
   validateCreateAttendancePayload,
   validateStudentIdParam,
 } from "../validator/attendance.validator";
 import { CreateAttendanceDTO } from "../dtos/attendance/attendance.dto";
-
-interface AuthenticatedRequest extends Request {
-  userId?: string;
-}
+import { AuthenticatedRequest } from "../shared/middleware/role.middleware";
 
 @injectable()
 export class AttendanceController implements IAttendanceController {
@@ -26,15 +24,16 @@ export class AttendanceController implements IAttendanceController {
 
   async getStudentAttendanceSummary(req: Request, res: Response): Promise<void> {
     try {
-      const { userId } = req as AuthenticatedRequest;
-      if (!userId) {
+      const { centerId, userId } = req as AuthenticatedRequest;
+      const scopeId = centerId ?? userId;
+      if (!scopeId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
       validateStudentIdParam(req.params.studentId);
 
       const result = await this._attendanceService.getStudentAttendanceSummary(
-        userId,
+        scopeId,
         req.params.studentId
       );
       sendResponse(res, StatusCode.OK, MESSAGES.COMMON.SUCCESS, true, result);
@@ -45,15 +44,16 @@ export class AttendanceController implements IAttendanceController {
 
   async getBatchAttendanceSummary(req: Request, res: Response): Promise<void> {
     try {
-      const { userId } = req as AuthenticatedRequest;
-      if (!userId) {
+      const { centerId, userId } = req as AuthenticatedRequest;
+      const scopeId = centerId ?? userId;
+      if (!scopeId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
       validateBatchIdParam(req.params.batchId);
 
       const result = await this._attendanceService.getBatchAttendanceSummary(
-        userId,
+        scopeId,
         req.params.batchId
       );
       sendResponse(res, StatusCode.OK, MESSAGES.COMMON.SUCCESS, true, result);
@@ -64,15 +64,16 @@ export class AttendanceController implements IAttendanceController {
 
   async getLowAttendanceStudents(req: Request, res: Response): Promise<void> {
     try {
-      const { userId } = req as AuthenticatedRequest;
-      if (!userId) {
+      const { centerId, userId } = req as AuthenticatedRequest;
+      const scopeId = centerId ?? userId;
+      if (!scopeId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
       validateBatchIdParam(req.params.batchId);
 
       const result = await this._attendanceService.getLowAttendanceStudents(
-        userId,
+        scopeId,
         req.params.batchId
       );
       sendResponse(res, StatusCode.OK, MESSAGES.COMMON.SUCCESS, true, result);
@@ -83,8 +84,9 @@ export class AttendanceController implements IAttendanceController {
 
   async getAttendanceByBatchAndDate(req: Request, res: Response): Promise<void> {
     try {
-      const { userId } = req as AuthenticatedRequest;
-      if (!userId) {
+      const { centerId, userId } = req as AuthenticatedRequest;
+      const scopeId = centerId ?? userId;
+      if (!scopeId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
@@ -92,7 +94,7 @@ export class AttendanceController implements IAttendanceController {
       validateAttendanceQuery(batchId, date);
 
       const result = await this._attendanceService.getAttendanceByBatchAndDate(
-        userId,
+        scopeId,
         batchId as string,
         date as string
       );
@@ -104,16 +106,44 @@ export class AttendanceController implements IAttendanceController {
 
   async saveAttendance(req: Request, res: Response): Promise<void> {
     try {
-      const { userId } = req as AuthenticatedRequest;
-      if (!userId) {
+      const { centerId, userId } = req as AuthenticatedRequest;
+      const scopeId = centerId ?? userId;
+      if (!scopeId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
       const payload = req.body as CreateAttendanceDTO;
-      validateCreateAttendancePayload(payload.batchId, payload.date, payload.records);
+      validateCreateAttendancePayload(payload);
 
-      await this._attendanceService.saveAttendance(userId, payload);
+      const { authUserId } = req as AuthenticatedRequest;
+      if (!authUserId) {
+        return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
+      }
+
+      await this._attendanceService.saveAttendance(scopeId, authUserId, payload);
       sendResponse(res, StatusCode.OK, "Attendance saved successfully", true);
+    } catch (error) {
+      handleControllerError(res, error);
+    }
+  }
+
+  async getAttendanceHistory(req: Request, res: Response): Promise<void> {
+    try {
+      const { centerId, userId } = req as AuthenticatedRequest;
+      const scopeId = centerId ?? userId;
+      if (!scopeId) {
+        return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
+      }
+
+      const filters = validateAttendanceHistoryFilters(req.query as {
+        studentId?: string;
+        batchId?: string;
+        dateFrom?: string;
+        dateTo?: string;
+      });
+
+      const records = await this._attendanceService.getAttendanceHistory(scopeId, filters);
+      sendResponse(res, StatusCode.OK, MESSAGES.COMMON.SUCCESS, true, records);
     } catch (error) {
       handleControllerError(res, error);
     }

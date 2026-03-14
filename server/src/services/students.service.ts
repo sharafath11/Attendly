@@ -2,6 +2,7 @@ import { inject, injectable } from "tsyringe";
 import mongoose from "mongoose";
 import { IStudentsService } from "../core/interfaces/services/IStudentsService";
 import { IStudentsRepository } from "../core/interfaces/repository/IStudentsRepository";
+import { ICenterRepository } from "../core/interfaces/repository/ICenterRepository";
 import { TYPES } from "../core/types";
 import { CreateStudentDTO, StudentQueryDTO, UpdateStudentDTO } from "../dtos/students/students.dto";
 import { StudentResponseDTO, StudentsListResponseDTO } from "../dtos/students/students.dto";
@@ -14,7 +15,9 @@ import { IStudent } from "../models/students.model";
 export class StudentsService implements IStudentsService {
   constructor(
     @inject(TYPES.IStudentsRepository)
-    private _studentsRepository: IStudentsRepository
+    private _studentsRepository: IStudentsRepository,
+    @inject(TYPES.ICenterRepository)
+    private _centerRepository: ICenterRepository
   ) {}
 
   private mapStudent(student: IStudent): StudentResponseDTO {
@@ -32,20 +35,50 @@ export class StudentsService implements IStudentsService {
     };
   }
 
-  private async ensureBatchOwnership(batchId: string, userId: string): Promise<void> {
+  private async ensureBatchOwnership(batchId: string, centerId: string): Promise<void> {
     const BatchModel = mongoose.models.Batch as mongoose.Model<any> | undefined;
     if (!BatchModel) {
       throwError("Batch model is not registered", StatusCode.INTERNAL_SERVER_ERROR);
     }
 
-    const batch = await BatchModel.findOne({ _id: batchId, userId }).lean().exec();
+    const batch = await BatchModel.findOne({
+      _id: batchId,
+      $or: [{ centerId: new mongoose.Types.ObjectId(centerId) }, { userId: centerId }],
+    })
+      .lean()
+      .exec();
     if (!batch) {
       throwError(MESSAGES.COMMON.ACCESS_DENIED, StatusCode.FORBIDDEN);
     }
   }
 
-  async createStudent(userId: string, payload: CreateStudentDTO): Promise<StudentResponseDTO> {
-    await this.ensureBatchOwnership(payload.batchId, userId);
+  private async ensureActiveSubscription(centerId: string, message: string): Promise<void> {
+    const center = await this._centerRepository.findById(centerId);
+    if (!center) {
+      throwError("Center not found", StatusCode.NOT_FOUND);
+    }
+    if (center.blocked) {
+      throwError("Your center account has been blocked.", StatusCode.FORBIDDEN);
+    }
+    if (center.subscriptionStatus !== "active") {
+      throwError(message, StatusCode.FORBIDDEN);
+    }
+  }
+
+  async createStudent(centerId: string, payload: CreateStudentDTO): Promise<StudentResponseDTO> {
+    await this.ensureActiveSubscription(centerId, "Subscription inactive. Student creation disabled.");
+    const center = await this._centerRepository.findById(centerId);
+    const studentLimit = center?.studentLimit ?? 150;
+    const existingCount = await this._studentsRepository.count({
+      $or: [{ centerId: new mongoose.Types.ObjectId(centerId) }, { userId: centerId }],
+      isDeleted: false,
+    });
+
+    if (existingCount >= studentLimit) {
+      throwError("Student limit reached for your subscription plan.", StatusCode.BAD_REQUEST);
+    }
+
+    await this.ensureBatchOwnership(payload.batchId, centerId);
 
     const student = await this._studentsRepository.create({
       name: payload.name,
@@ -54,18 +87,19 @@ export class StudentsService implements IStudentsService {
       batchId: new mongoose.Types.ObjectId(payload.batchId),
       monthlyFee: payload.monthlyFee,
       joinDate: new Date(payload.joinDate),
-      userId: new mongoose.Types.ObjectId(userId),
+      centerId: new mongoose.Types.ObjectId(centerId),
+      userId: new mongoose.Types.ObjectId(centerId),
     } as Partial<IStudent>);
 
     return this.mapStudent(student);
   }
 
-  async getStudents(userId: string, query: StudentQueryDTO): Promise<StudentsListResponseDTO> {
+  async getStudents(centerId: string, query: StudentQueryDTO): Promise<StudentsListResponseDTO> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
 
     const filter: Record<string, unknown> = {
-      userId: new mongoose.Types.ObjectId(userId),
+      $or: [{ centerId: new mongoose.Types.ObjectId(centerId) }, { userId: centerId }],
       isDeleted: false,
     };
 
@@ -80,7 +114,10 @@ export class StudentsService implements IStudentsService {
         throwError("Batch model is not registered", StatusCode.INTERNAL_SERVER_ERROR);
       }
 
-      const sessionBatches = await BatchModel.find({ userId, session: query.session })
+      const sessionBatches = await BatchModel.find({
+        session: query.session,
+        $or: [{ centerId: new mongoose.Types.ObjectId(centerId) }, { userId: centerId }],
+      })
         .select("_id")
         .lean()
         .exec();
@@ -128,31 +165,38 @@ export class StudentsService implements IStudentsService {
     };
   }
 
-  async getStudentById(userId: string, id: string): Promise<StudentResponseDTO> {
+  async getStudentById(centerId: string, id: string): Promise<StudentResponseDTO> {
     const student = await this._studentsRepository.findById(id);
     if (!student || student.isDeleted) {
       throwError("Student not found", StatusCode.NOT_FOUND);
     }
 
-    if (student.userId.toString() !== userId) {
+    if (
+      student.centerId?.toString() !== centerId &&
+      student.userId?.toString() !== centerId
+    ) {
       throwError(MESSAGES.COMMON.ACCESS_DENIED, StatusCode.FORBIDDEN);
     }
 
     return this.mapStudent(student);
   }
 
-  async updateStudent(userId: string, id: string, payload: UpdateStudentDTO): Promise<StudentResponseDTO> {
+  async updateStudent(centerId: string, id: string, payload: UpdateStudentDTO): Promise<StudentResponseDTO> {
+    await this.ensureActiveSubscription(centerId, "Subscription inactive. Student update disabled.");
     const existing = await this._studentsRepository.findById(id);
     if (!existing || existing.isDeleted) {
       throwError("Student not found", StatusCode.NOT_FOUND);
     }
 
-    if (existing.userId.toString() !== userId) {
+    if (
+      existing.centerId?.toString() !== centerId &&
+      existing.userId?.toString() !== centerId
+    ) {
       throwError(MESSAGES.COMMON.ACCESS_DENIED, StatusCode.FORBIDDEN);
     }
 
     if (payload.batchId) {
-      await this.ensureBatchOwnership(payload.batchId, userId);
+      await this.ensureBatchOwnership(payload.batchId, centerId);
     }
 
     const updated = await this._studentsRepository.update(id, {
@@ -171,13 +215,17 @@ export class StudentsService implements IStudentsService {
     return this.mapStudent(updated);
   }
 
-  async deleteStudent(userId: string, id: string): Promise<void> {
+  async deleteStudent(centerId: string, id: string): Promise<void> {
+    await this.ensureActiveSubscription(centerId, "Subscription inactive. Student deletion disabled.");
     const existing = await this._studentsRepository.findById(id);
     if (!existing || existing.isDeleted) {
       throwError("Student not found", StatusCode.NOT_FOUND);
     }
 
-    if (existing.userId.toString() !== userId) {
+    if (
+      existing.centerId?.toString() !== centerId &&
+      existing.userId?.toString() !== centerId
+    ) {
       throwError(MESSAGES.COMMON.ACCESS_DENIED, StatusCode.FORBIDDEN);
     }
 

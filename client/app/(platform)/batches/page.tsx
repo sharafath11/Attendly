@@ -6,6 +6,7 @@ import { Filter, Plus } from "lucide-react";
 import Modal from "@/components/dashboard/Modal";
 import FormInput from "@/components/dashboard/FormInput";
 import { Button } from "@/components/button";
+import { useSubscription } from "@/components/dashboard/SubscriptionContext";
 import { showErrorToast, showSuccessToast } from "@/utils/toast";
 import {
   useBatches,
@@ -45,6 +46,7 @@ const emptyForm: BatchFormValues = {
 const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 export default function BatchesPage() {
+  const { isActive } = useSubscription();
   const router = useRouter();
   const [mediumFilter, setMediumFilter] = useState(filterOptions.medium[0]);
   const [sessionFilter, setSessionFilter] = useState(filterOptions.session[0]);
@@ -193,7 +195,7 @@ export default function BatchesPage() {
               ))}
             </select>
           </div>
-          <Button onClick={openAddModal} className="gap-2">
+          <Button onClick={openAddModal} className="gap-2" disabled={!isActive}>
             <Plus className="h-4 w-4" /> Add Batch
           </Button>
         </div>
@@ -213,6 +215,8 @@ export default function BatchesPage() {
               onDelete={openDeleteConfirm}
               onViewStudents={(selected) => router.push(`/batches/${selected.id}/students`)}
               onMarkAttendance={(selected) => router.push(`/attendance/${selected.id}`)}
+              actionsDisabled={!isActive}
+              attendanceDisabled={!isActive}
             />
           ))}
         </div>

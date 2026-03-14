@@ -28,17 +28,25 @@ export abstract class BaseRepository<T extends Document, U>
     }
   }
 
-  async count(filter: FilterQuery<T> = {}): Promise<number> {
+  async count(filter: FilterQuery<T> | string = {}): Promise<number> {
     try {
-      return await this.model.countDocuments(filter);
+      const normalizedFilter =
+        typeof filter === "string"
+          ? ({ $or: [{ centerId: filter }, { userId: filter }] } as FilterQuery<T>)
+          : filter;
+      return await this.model.countDocuments(normalizedFilter);
     } catch (error) {
       throw this.handleError(error, MESSAGES.REPOSITORY.COUNT_ERROR);
     }
   }
 
-  async findAll(filter: FilterQuery<T> = {}): Promise<U[]> {
+  async findAll(filter: FilterQuery<T> | string = {}): Promise<U[]> {
     try {
-    return await this.model.find(filter).lean().exec() as unknown as U[];
+      const normalizedFilter =
+        typeof filter === "string"
+          ? ({ $or: [{ centerId: filter }, { userId: filter }] } as FilterQuery<T>)
+          : filter;
+    return await this.model.find(normalizedFilter).lean().exec() as unknown as U[];
       
     } catch (error) {
       throw this.handleError(error, MESSAGES.REPOSITORY.FIND_ALL_ERROR);

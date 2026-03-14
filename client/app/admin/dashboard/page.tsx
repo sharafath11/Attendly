@@ -1,0 +1,76 @@
+"use client";
+
+import { useAdminDashboard, useAdminDashboardCharts } from "@/hooks/useAdmin";
+import { AdminCharts, AdminDashboard } from "@/types/admin/adminTypes";
+import {
+  Bar,
+  BarChart,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
+export default function AdminDashboardPage() {
+  const { data: dashboardRes } = useAdminDashboard();
+  const { data: chartsRes } = useAdminDashboardCharts();
+
+  const dashboard = (dashboardRes?.data ?? {}) as AdminDashboard;
+  const charts = (chartsRes?.data ?? { revenueByMonth: [], centersGrowth: [] }) as AdminCharts;
+
+  const cards = [
+    { label: "Total Centers", value: dashboard.totalCenters ?? 0 },
+    { label: "Active Centers", value: dashboard.activeCenters ?? 0 },
+    { label: "Blocked Centers", value: dashboard.blockedCenters ?? 0 },
+    { label: "Pending Centers", value: dashboard.pendingCenters ?? 0 },
+    { label: "Total Students", value: dashboard.totalStudents ?? 0 },
+    { label: "Total Teachers", value: dashboard.totalTeachers ?? 0 },
+    { label: "Monthly Revenue", value: dashboard.monthlyRevenue ?? 0 },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <p className="text-sm text-muted-foreground">Platform analytics and revenue overview.</p>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {cards.map((card) => (
+          <div key={card.label} className="rounded-xl border border-border bg-card p-4 shadow-sm">
+            <p className="text-xs uppercase text-muted-foreground">{card.label}</p>
+            <p className="mt-2 text-2xl font-semibold">{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <h2 className="text-sm font-semibold">Revenue Growth</h2>
+          <div className="mt-4 h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={charts.revenueByMonth}>
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <h2 className="text-sm font-semibold">Centers Growth</h2>
+          <div className="mt-4 h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={charts.centersGrowth}>
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="centers" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

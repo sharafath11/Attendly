@@ -9,32 +9,42 @@ import {
   Users,
   CalendarCheck2,
   WalletCards,
-  LineChart,
   Settings,
   LogOut,
   BookOpenCheck,
   Layers,
+  HandCoins,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
   mobileOpen: boolean;
   onMobileClose: () => void;
+  role: "center_owner" | "teacher" | null;
 }
 
-const navItems = [
+const ownerNavItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Students", href: "/students", icon: Users },
   { label: "Batches", href: "/batches", icon: Layers },
   { label: "Attendance", href: "/attendance", icon: CalendarCheck2 },
+  { label: "Teacher Attendance", href: "/teacher-attendance", icon: CalendarCheck2 },
+  { label: "Teacher Attendance History", href: "/teacher-attendance-history", icon: CalendarCheck2 },
   { label: "Fees", href: "/fees", icon: WalletCards },
-  { label: "Reports", href: "/reports", icon: LineChart },
+  { label: "Teacher Payments", href: "/teacher-payments", icon: HandCoins },
+  { label: "Teachers", href: "/teachers", icon: Users },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
+const teacherNavItems = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Students", href: "/students", icon: Users },
+  { label: "Batches", href: "/batches", icon: Layers },
+  { label: "Attendance", href: "/attendance", icon: CalendarCheck2 },
+];
+
+export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose, role }: SidebarProps) {
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLButtonElement>(null);
@@ -67,7 +77,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
     }
   }, [mobileOpen]);
 
-  const items = useMemo(() => navItems, []);
+  const items = useMemo(() => {
+    const effectiveRole = role ?? "teacher";
+    return effectiveRole === "center_owner" ? ownerNavItems : teacherNavItems;
+  }, [role]);
 
   return (
     <>

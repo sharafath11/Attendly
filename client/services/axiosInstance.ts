@@ -8,7 +8,12 @@ const axiosInstance = axios.create({
 });
 
 let isRefreshing = false;
+let isAdminRefreshing = false;
 let failedQueue: Array<{
+  resolve: (value: unknown) => void;
+  reject: (reason?: any) => void;
+}> = [];
+let adminFailedQueue: Array<{
   resolve: (value: unknown) => void;
   reject: (reason?: any) => void;
 }> = [];
@@ -18,6 +23,13 @@ const processQueue = (error: any) => {
     error ? prom.reject(error) : prom.resolve(null);
   });
   failedQueue = [];
+};
+
+const processAdminQueue = (error: any) => {
+  adminFailedQueue.forEach(prom => {
+    error ? prom.reject(error) : prom.resolve(null);
+  });
+  adminFailedQueue = [];
 };
 
 axiosInstance.interceptors.response.use(
@@ -32,7 +44,26 @@ axiosInstance.interceptors.response.use(
       hasRetried: originalRequest?._retry
     });
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (
+      error.response?.status === 403 &&
+      typeof error.response?.data?.message === "string" &&
+      error.response.data.message.includes("blocked")
+    ) {
+      if (typeof window !== "undefined") {
+        const reason = error.response?.data?.reason || "";
+        sessionStorage.setItem("blockedReason", reason);
+        window.location.href = "/blocked";
+      }
+      return Promise.reject(error);
+    }
+
+    const requestUrl = originalRequest?.url || "";
+    const isAuthRefresh = requestUrl.includes("/auth/refresh-token");
+    const isAdminRefresh = requestUrl.includes("/admin/auth/refresh-token");
+    const isAdminRequest = requestUrl.startsWith("/admin");
+    const isAdminLogin = requestUrl.includes("/admin/auth/login");
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRefresh && !isAdminRequest) {
       console.log("[Axios Interceptor] 401 detected - initiating refresh flow");
       
       if (isRefreshing) {
@@ -70,6 +101,47 @@ axiosInstance.interceptors.response.use(
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
+      }
+    }
+
+    if (error.response?.status === 401 && !originalRequest._retry && isAdminRequest && !isAdminRefresh && !isAdminLogin) {
+      console.log("[Axios Interceptor] Admin 401 detected - initiating admin refresh flow");
+
+      if (isAdminRefreshing) {
+        console.log("[Axios Interceptor] Admin refresh in progress - queueing request");
+        return new Promise((resolve, reject) => {
+          adminFailedQueue.push({ resolve, reject });
+        })
+          .then(() => {
+            console.log("[Axios Interceptor] Retrying queued admin request:", originalRequest.url);
+            return axiosInstance(originalRequest);
+          })
+          .catch(err => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isAdminRefreshing = true;
+
+      try {
+        console.log("[Axios Interceptor] Calling POST /admin/auth/refresh-token");
+        await axiosInstance.post("/admin/auth/refresh-token");
+
+        console.log("[Axios Interceptor] Admin refresh successful - processing queue");
+        processAdminQueue(null);
+
+        console.log("[Axios Interceptor] Retrying original admin request:", originalRequest.url);
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        console.error("[Axios Interceptor] Admin refresh failed - redirecting to admin login");
+        processAdminQueue(refreshError);
+
+        if (typeof window !== "undefined") {
+          window.location.href = "/admin/login";
+        }
+
+        return Promise.reject(refreshError);
+      } finally {
+        isAdminRefreshing = false;
       }
     }
 

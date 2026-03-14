@@ -15,4 +15,5 @@ export interface IStudentsRepository {
   findById(id: string, projection?: ProjectionType<IStudent>): Promise<IStudent | null>;
   update(id: string, data: Partial<IStudent>): Promise<IStudent | null>;
   softDelete(id: string): Promise<boolean>;
+  count(filter: FilterQuery<StudentDocument>): Promise<number>;
 }

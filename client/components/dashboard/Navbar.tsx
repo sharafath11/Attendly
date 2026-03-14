@@ -2,24 +2,34 @@
 
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Bell, Search, Sun, Moon, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
-
+import { userAuthMethods } from "@/services/methods/userMethods";
 interface NavbarProps {
   onMenuClick: () => void;
+  role: "center_owner" | "teacher" | null;
 }
 
-export default function Navbar({ onMenuClick }: NavbarProps) {
+export default function Navbar({ onMenuClick, role }: NavbarProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const isOwner = role === "center_owner";
+
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  const handleLogout = async () => {
+    await userAuthMethods.logout();
+    router.replace("/login");
   };
 
   return (
@@ -57,35 +67,49 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
           {mounted && theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
 
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <button className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1 text-sm">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                SA
-              </span>
-              <span className="hidden text-xs font-medium text-foreground sm:inline">Sharafath</span>
-            </button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content
-              className={cn(
-                "z-50 min-w-[180px] rounded-lg border border-border bg-card p-2 text-sm shadow-lg",
-              )}
-              sideOffset={8}
-            >
-              <DropdownMenu.Item className="cursor-pointer rounded-md px-3 py-2 text-muted-foreground hover:bg-secondary hover:text-foreground">
-                Profile
-              </DropdownMenu.Item>
-              <DropdownMenu.Item className="cursor-pointer rounded-md px-3 py-2 text-muted-foreground hover:bg-secondary hover:text-foreground">
-                Settings
-              </DropdownMenu.Item>
-              <DropdownMenu.Separator className="my-2 h-px bg-border" />
-              <DropdownMenu.Item className="cursor-pointer rounded-md px-3 py-2 text-muted-foreground hover:bg-secondary hover:text-foreground">
-                Logout
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
-        </DropdownMenu.Root>
+        {mounted ? (
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <button className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1 text-sm">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                  SA
+                </span>
+                <span className="hidden text-xs font-medium text-foreground sm:inline">Sharafath</span>
+              </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content
+                className={cn(
+                  "z-50 min-w-[180px] rounded-lg border border-border bg-card p-2 text-sm shadow-lg",
+                )}
+                sideOffset={8}
+              >
+                <DropdownMenu.Item className="cursor-pointer rounded-md px-3 py-2 text-muted-foreground hover:bg-secondary hover:text-foreground">
+                  Profile
+                </DropdownMenu.Item>
+                {isOwner && (
+                  <DropdownMenu.Item className="cursor-pointer rounded-md px-3 py-2 text-muted-foreground hover:bg-secondary hover:text-foreground">
+                    Settings
+                  </DropdownMenu.Item>
+                )}
+                <DropdownMenu.Separator className="my-2 h-px bg-border" />
+                <DropdownMenu.Item
+                  onSelect={handleLogout}
+                  className="cursor-pointer rounded-md px-3 py-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                >
+                  Logout
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
+        ) : (
+          <div className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1 text-sm">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+              SA
+            </span>
+            <span className="hidden text-xs font-medium text-foreground sm:inline">Sharafath</span>
+          </div>
+        )}
       </div>
     </header>
   );

@@ -8,6 +8,8 @@ interface BatchCardProps {
   onDelete: (batch: Batch) => void;
   onViewStudents: (batch: Batch) => void;
   onMarkAttendance: (batch: Batch) => void;
+  actionsDisabled?: boolean;
+  attendanceDisabled?: boolean;
 }
 
 const formatDays = (days: string[]) => days.join(" ");
@@ -18,11 +20,20 @@ export default function BatchCard({
   onDelete,
   onViewStudents,
   onMarkAttendance,
+  actionsDisabled = false,
+  attendanceDisabled = false,
 }: BatchCardProps) {
   return (
     <div
-      onClick={() => onMarkAttendance(batch)}
-      className="cursor-pointer rounded-xl border border-border bg-card p-5 shadow-sm transition hover:-translate-y-0.5"
+      onClick={() => {
+        if (!attendanceDisabled) {
+          onMarkAttendance(batch);
+        }
+      }}
+      className={[
+        "rounded-xl border border-border bg-card p-5 shadow-sm transition hover:-translate-y-0.5",
+        attendanceDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+      ].join(" ")}
     >
       <div className="flex items-center justify-between gap-3">
         <div>
@@ -45,18 +56,24 @@ export default function BatchCard({
         <button
           onClick={(event) => {
             event.stopPropagation();
-            onEdit(batch);
+            if (!actionsDisabled) {
+              onEdit(batch);
+            }
           }}
-          className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary"
+          disabled={actionsDisabled}
+          className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
         >
           Edit
         </button>
         <button
           onClick={(event) => {
             event.stopPropagation();
-            onDelete(batch);
+            if (!actionsDisabled) {
+              onDelete(batch);
+            }
           }}
-          className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary"
+          disabled={actionsDisabled}
+          className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
         >
           Delete
         </button>

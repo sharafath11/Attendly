@@ -6,6 +6,7 @@ import DataTable from "@/components/dashboard/DataTable";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import Modal from "@/components/dashboard/Modal";
 import { Button } from "@/components/button";
+import { useSubscription } from "@/components/dashboard/SubscriptionContext";
 import { showErrorToast, showSuccessToast } from "@/utils/toast";
 import { useBatch } from "@/hooks/useBatches";
 import { useStudents } from "@/hooks/useStudents";
@@ -20,6 +21,7 @@ const getCurrentMonthYear = () => {
 };
 
 export default function BatchStudentsPage() {
+  const { isActive } = useSubscription();
   const params = useParams();
   const batchId = typeof params?.batchId === "string" ? params.batchId : "";
   const { month, year } = getCurrentMonthYear();
@@ -151,7 +153,8 @@ export default function BatchStudentsPage() {
                 return (
                   <button
                     onClick={() => (fee.status === "Paid" ? openEditStatus(fee) : openMarkPaid(fee))}
-                    className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary"
+                    disabled={!isActive}
+                    className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {fee.status === "Paid" ? "Edit" : "Mark Paid"}
                   </button>
@@ -192,7 +195,7 @@ export default function BatchStudentsPage() {
           <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleConfirmPaid} isLoading={markPaid.isPending}>
+          <Button onClick={handleConfirmPaid} isLoading={markPaid.isPending} disabled={!isActive}>
             Confirm
           </Button>
         </div>
@@ -235,7 +238,7 @@ export default function BatchStudentsPage() {
           <Button variant="secondary" onClick={() => setEditOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleUpdateStatus} isLoading={updateStatus.isPending}>
+          <Button onClick={handleUpdateStatus} isLoading={updateStatus.isPending} disabled={!isActive}>
             Confirm
           </Button>
         </div>

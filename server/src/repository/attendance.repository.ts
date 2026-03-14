@@ -18,12 +18,13 @@ export class AttendanceRepository
     super(AttendanceModel);
   }
 
-  async getStudentAttendanceSummary(userId: string, studentId: string): Promise<StudentAttendanceSummaryDTO> {
+  async getStudentAttendanceSummary(centerId: string, studentId: string): Promise<StudentAttendanceSummaryDTO> {
     try {
+      const centerObjectId = new mongoose.Types.ObjectId(centerId);
       const [summary] = await this.model.aggregate([
         {
           $match: {
-            userId: new mongoose.Types.ObjectId(userId),
+            centerId: centerObjectId,
             studentId: new mongoose.Types.ObjectId(studentId),
           },
         },
@@ -33,7 +34,7 @@ export class AttendanceRepository
             totalClasses: { $sum: 1 },
             present: {
               $sum: {
-                $cond: [{ $eq: ["$status", "Present"] }, 1, 0],
+                $cond: [{ $eq: ["$status", "present"] }, 1, 0],
               },
             },
           },
@@ -84,16 +85,16 @@ export class AttendanceRepository
   }
 
   async getBatchAttendanceSummary(
-    userId: string,
+    centerId: string,
     batchId: string,
     dateFrom: Date
   ): Promise<BatchAttendanceSummaryDTO> {
     try {
-      const userObjectId = new mongoose.Types.ObjectId(userId);
+      const centerObjectId = new mongoose.Types.ObjectId(centerId);
       const batchObjectId = new mongoose.Types.ObjectId(batchId);
 
       const baseMatch = {
-        userId: userObjectId,
+        centerId: centerObjectId,
         batchId: batchObjectId,
         date: { $gte: dateFrom },
       };
@@ -106,7 +107,7 @@ export class AttendanceRepository
             totalClasses: { $sum: 1 },
             present: {
               $sum: {
-                $cond: [{ $eq: ["$status", "Present"] }, 1, 0],
+                $cond: [{ $eq: ["$status", "present"] }, 1, 0],
               },
             },
           },
@@ -186,7 +187,7 @@ export class AttendanceRepository
       const monthlyTrend = await this.model.aggregate([
         {
           $match: {
-            userId: userObjectId,
+            centerId: centerObjectId,
             batchId: batchObjectId,
             date: { $gte: sixMonthsAgo },
           },
@@ -197,7 +198,7 @@ export class AttendanceRepository
             totalClasses: { $sum: 1 },
             present: {
               $sum: {
-                $cond: [{ $eq: ["$status", "Present"] }, 1, 0],
+                $cond: [{ $eq: ["$status", "present"] }, 1, 0],
               },
             },
           },
@@ -242,19 +243,19 @@ export class AttendanceRepository
   }
 
   async getLowAttendanceStudents(
-    userId: string,
+    centerId: string,
     batchId: string,
     dateFrom: Date,
     threshold: number
   ): Promise<LowAttendanceStudentDTO[]> {
     try {
-      const userObjectId = new mongoose.Types.ObjectId(userId);
+      const centerObjectId = new mongoose.Types.ObjectId(centerId);
       const batchObjectId = new mongoose.Types.ObjectId(batchId);
 
       const results = await this.model.aggregate([
         {
           $match: {
-            userId: userObjectId,
+            $or: [{ centerId: centerObjectId }, { userId: centerObjectId }],
             batchId: batchObjectId,
             date: { $gte: dateFrom },
           },
@@ -294,7 +295,7 @@ export class AttendanceRepository
                   $expr: {
                     $and: [
                       { $eq: ["$_id", "$$studentId"] },
-                      { $eq: ["$userId", userObjectId] },
+                      { $or: [{ $eq: ["$centerId", centerObjectId] }, { $eq: ["$userId", centerObjectId] }] },
                       { $eq: ["$isDeleted", false] },
                     ],
                   },
@@ -323,14 +324,15 @@ export class AttendanceRepository
   }
 
   async getAttendanceByBatchAndDate(
-    userId: string,
+    centerId: string,
     batchId: string,
     date: Date
   ): Promise<AttendanceRecordDTO[]> {
     try {
+      const centerObjectId = new mongoose.Types.ObjectId(centerId);
       const records = await this.model
         .find({
-          userId: new mongoose.Types.ObjectId(userId),
+          $or: [{ centerId: centerObjectId }, { userId: centerObjectId }],
           batchId: new mongoose.Types.ObjectId(batchId),
           date,
         })
@@ -340,7 +342,7 @@ export class AttendanceRepository
 
       return records.map((record) => ({
         studentId: record.studentId.toString(),
-        status: record.status as "Present" | "Absent",
+        status: record.status as "present" | "absent" | "leave",
       }));
     } catch (error) {
       throw this.handleError(error, MESSAGES.REPOSITORY.FIND_ALL_ERROR);
@@ -348,20 +350,22 @@ export class AttendanceRepository
   }
 
   async upsertAttendanceByBatchAndDate(
-    userId: string,
+    centerId: string,
     batchId: string,
     date: Date,
-    records: AttendanceRecordDTO[]
+    records: AttendanceRecordDTO[],
+    markedBy: string
   ): Promise<void> {
     try {
       const now = new Date();
-      const userObjectId = new mongoose.Types.ObjectId(userId);
+      const centerObjectId = new mongoose.Types.ObjectId(centerId);
       const batchObjectId = new mongoose.Types.ObjectId(batchId);
+      const markedByObjectId = new mongoose.Types.ObjectId(markedBy);
 
       const operations = records.map((record) => ({
         updateOne: {
           filter: {
-            userId: userObjectId,
+            centerId: centerObjectId,
             batchId: batchObjectId,
             studentId: new mongoose.Types.ObjectId(record.studentId),
             date,
@@ -369,9 +373,11 @@ export class AttendanceRepository
           update: {
             $set: {
               status: record.status,
+              markedBy: markedByObjectId,
             },
             $setOnInsert: {
-              userId: userObjectId,
+              centerId: centerObjectId,
+              markedBy: markedByObjectId,
               batchId: batchObjectId,
               studentId: new mongoose.Types.ObjectId(record.studentId),
               date,
@@ -387,6 +393,123 @@ export class AttendanceRepository
       await this.model.bulkWrite(operations);
     } catch (error) {
       throw this.handleError(error, MESSAGES.REPOSITORY.UPDATE_MANY_ERROR);
+    }
+  }
+
+  async upsertAttendanceRecord(
+    centerId: string,
+    studentId: string,
+    date: Date,
+    status: AttendanceRecordDTO["status"],
+    markedBy: string,
+    batchId?: string
+  ): Promise<void> {
+    try {
+      const centerObjectId = new mongoose.Types.ObjectId(centerId);
+      const studentObjectId = new mongoose.Types.ObjectId(studentId);
+      const markedByObjectId = new mongoose.Types.ObjectId(markedBy);
+      const update: Record<string, unknown> = {
+        status,
+        markedBy: markedByObjectId,
+        centerId: centerObjectId,
+        studentId: studentObjectId,
+        date,
+      };
+      if (batchId) {
+        update.batchId = new mongoose.Types.ObjectId(batchId);
+      }
+
+      await this.model.updateOne(
+        { studentId: studentObjectId, date },
+        { $set: update, $setOnInsert: { createdAt: new Date() } },
+        { upsert: true }
+      );
+    } catch (error) {
+      throw this.handleError(error, MESSAGES.REPOSITORY.UPDATE_ERROR);
+    }
+  }
+
+  async getAttendanceHistory(
+    centerId: string,
+    filters: {
+      studentId?: string;
+      batchId?: string;
+      dateFrom?: Date;
+      dateTo?: Date;
+    }
+  ): Promise<
+    {
+      id: string;
+      studentId: string;
+      batchId: string;
+      date: string;
+      status: "present" | "absent" | "leave";
+      markedBy?: string;
+      createdAt?: Date;
+      updatedAt?: Date;
+      student?: { id: string; name: string };
+      batch?: { id: string; batchName: string };
+      marker?: { id: string; name: string; role?: string };
+    }[]
+  > {
+    try {
+      const centerObjectId = new mongoose.Types.ObjectId(centerId);
+      const match: Record<string, unknown> = { centerId: centerObjectId };
+      if (filters.studentId) {
+        match.studentId = new mongoose.Types.ObjectId(filters.studentId);
+      }
+      if (filters.batchId) {
+        match.batchId = new mongoose.Types.ObjectId(filters.batchId);
+      }
+      if (filters.dateFrom || filters.dateTo) {
+        match.date = {};
+        if (filters.dateFrom) {
+          (match.date as Record<string, unknown>).$gte = filters.dateFrom;
+        }
+        if (filters.dateTo) {
+          (match.date as Record<string, unknown>).$lte = filters.dateTo;
+        }
+      }
+
+      const records = await this.model
+        .find(match)
+        .sort({ date: -1 })
+        .populate({ path: "studentId", select: "name" })
+        .populate({ path: "batchId", select: "batchName" })
+        .populate({ path: "markedBy", select: "name role" })
+        .lean()
+        .exec();
+
+      return records.map((record) => {
+        const student = record.studentId as any;
+        const batch = record.batchId as any;
+        const marker = record.markedBy as any;
+        return {
+          id: record._id.toString(),
+          studentId: student?._id?.toString?.() ?? record.studentId.toString(),
+          batchId: batch?._id?.toString?.() ?? record.batchId.toString(),
+          date: record.date.toISOString().split("T")[0],
+          status: record.status as "present" | "absent" | "leave",
+          markedBy: marker?._id?.toString?.() ?? record.markedBy?.toString(),
+          createdAt: record.createdAt,
+          updatedAt: record.updatedAt,
+          student: student
+            ? { id: student._id?.toString?.() ?? record.studentId.toString(), name: student.name }
+            : undefined,
+          batch: batch
+            ? { id: batch._id?.toString?.() ?? record.batchId.toString(), batchName: batch.batchName }
+            : undefined,
+          marker: marker
+            ? {
+                id: marker._id?.toString?.() ?? record.markedBy.toString(),
+                name: marker.name ?? "User",
+                role: marker.role,
+              }
+            : undefined,
+        };
+      });
+    } catch (error) {
+      throw this.handleError(error, MESSAGES.REPOSITORY.FIND_ALL_ERROR);
     }
   }
 }

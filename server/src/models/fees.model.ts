@@ -7,6 +7,7 @@ export interface IFee {
   _id: mongoose.Types.ObjectId;
   studentId: mongoose.Types.ObjectId;
   batchId: mongoose.Types.ObjectId;
+  centerId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   month: number;
   year: number;
@@ -34,6 +35,7 @@ const feeSchema: Schema<FeeDocument> = new Schema(
   {
     studentId: { type: Schema.Types.ObjectId, required: true, ref: "Student", index: true },
     batchId: { type: Schema.Types.ObjectId, required: true, ref: "Batch", index: true },
+    centerId: { type: Schema.Types.ObjectId, required: true, ref: "Center", index: true },
     userId: { type: Schema.Types.ObjectId, required: true, ref: "User", index: true },
     month: { type: Number, required: true },
     year: { type: Number, required: true },
@@ -60,6 +62,9 @@ const feeSchema: Schema<FeeDocument> = new Schema(
   { timestamps: true }
 );
 
+feeSchema.index({ centerId: 1, month: 1, year: 1 });
+feeSchema.index({ centerId: 1, batchId: 1, month: 1, year: 1 });
+feeSchema.index({ centerId: 1, studentId: 1, month: 1, year: 1 }, { unique: true });
 feeSchema.index({ userId: 1, month: 1, year: 1 });
 feeSchema.index({ userId: 1, batchId: 1, month: 1, year: 1 });
 feeSchema.index({ userId: 1, studentId: 1, month: 1, year: 1 }, { unique: true });

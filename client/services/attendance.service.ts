@@ -1,4 +1,5 @@
 import { attendanceApi } from "./attendance.api";
+import type { AttendanceHistoryFilters, CreateAttendancePayload } from "@/types/attendance/attendanceTypes";
 
 export const attendanceService = {
   getStudentSummary: (studentId: string) => attendanceApi.getStudentSummary(studentId),
@@ -6,6 +7,7 @@ export const attendanceService = {
   getLowAttendance: (batchId: string) => attendanceApi.getLowAttendance(batchId),
   getAttendanceByDate: (batchId: string, date: string) =>
     attendanceApi.getAttendanceByDate(batchId, date),
+  getAttendanceHistory: (filters?: AttendanceHistoryFilters) =>
+    attendanceApi.getAttendanceHistory(filters),
   saveAttendance: (payload: CreateAttendancePayload) => attendanceApi.saveAttendance(payload),
 };
-import type { CreateAttendancePayload } from "@/types/attendance/attendanceTypes";

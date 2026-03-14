@@ -1,6 +1,7 @@
 import { inject, injectable } from "tsyringe";
 import { IAttendanceService } from "../core/interfaces/services/IAttendanceService";
 import { IAttendanceRepository } from "../core/interfaces/repository/IAttendanceRepository";
+import { ICenterRepository } from "../core/interfaces/repository/ICenterRepository";
 import { TYPES } from "../core/types";
 import {
   AttendanceByDateDTO,
@@ -16,7 +17,9 @@ import { StatusCode } from "../enums/statusCode";
 export class AttendanceService implements IAttendanceService {
   constructor(
     @inject(TYPES.IAttendanceRepository)
-    private _attendanceRepository: IAttendanceRepository
+    private _attendanceRepository: IAttendanceRepository,
+    @inject(TYPES.ICenterRepository)
+    private _centerRepository: ICenterRepository
   ) {}
 
   private getLast30DaysStart(): Date {
@@ -43,31 +46,44 @@ export class AttendanceService implements IAttendanceService {
     return date;
   }
 
+  private async ensureActiveSubscription(centerId: string, message: string): Promise<void> {
+    const center = await this._centerRepository.findById(centerId);
+    if (!center) {
+      throwError("Center not found", StatusCode.NOT_FOUND);
+    }
+    if (center.blocked) {
+      throwError("Your center account has been blocked.", StatusCode.FORBIDDEN);
+    }
+    if (center.subscriptionStatus !== "active") {
+      throwError(message, StatusCode.FORBIDDEN);
+    }
+  }
+
   async getStudentAttendanceSummary(
-    userId: string,
+    centerId: string,
     studentId: string
   ): Promise<StudentAttendanceSummaryDTO> {
-    return this._attendanceRepository.getStudentAttendanceSummary(userId, studentId);
+    return this._attendanceRepository.getStudentAttendanceSummary(centerId, studentId);
   }
 
-  async getBatchAttendanceSummary(userId: string, batchId: string): Promise<BatchAttendanceSummaryDTO> {
+  async getBatchAttendanceSummary(centerId: string, batchId: string): Promise<BatchAttendanceSummaryDTO> {
     const dateFrom = this.getLast30DaysStart();
-    return this._attendanceRepository.getBatchAttendanceSummary(userId, batchId, dateFrom);
+    return this._attendanceRepository.getBatchAttendanceSummary(centerId, batchId, dateFrom);
   }
 
-  async getLowAttendanceStudents(userId: string, batchId: string): Promise<LowAttendanceStudentDTO[]> {
+  async getLowAttendanceStudents(centerId: string, batchId: string): Promise<LowAttendanceStudentDTO[]> {
     const dateFrom = this.getLast30DaysStart();
-    return this._attendanceRepository.getLowAttendanceStudents(userId, batchId, dateFrom, 75);
+    return this._attendanceRepository.getLowAttendanceStudents(centerId, batchId, dateFrom, 75);
   }
 
   async getAttendanceByBatchAndDate(
-    userId: string,
+    centerId: string,
     batchId: string,
     date: string
   ): Promise<AttendanceByDateDTO> {
     const normalizedDate = this.normalizeDateOnly(date);
     const records = await this._attendanceRepository.getAttendanceByBatchAndDate(
-      userId,
+      centerId,
       batchId,
       normalizedDate
     );
@@ -79,13 +95,47 @@ export class AttendanceService implements IAttendanceService {
     };
   }
 
-  async saveAttendance(userId: string, payload: CreateAttendanceDTO): Promise<void> {
+  async saveAttendance(centerId: string, markedBy: string, payload: CreateAttendanceDTO): Promise<void> {
+    await this.ensureActiveSubscription(centerId, "Subscription inactive. Attendance marking disabled.");
     const normalizedDate = this.normalizeDateOnly(payload.date);
-    await this._attendanceRepository.upsertAttendanceByBatchAndDate(
-      userId,
-      payload.batchId,
-      normalizedDate,
-      payload.records
-    );
+    if (payload.records && payload.records.length > 0 && payload.batchId) {
+      await this._attendanceRepository.upsertAttendanceByBatchAndDate(
+        centerId,
+        payload.batchId,
+        normalizedDate,
+        payload.records,
+        markedBy
+      );
+      return;
+    }
+    if (payload.studentId && payload.status) {
+      await this._attendanceRepository.upsertAttendanceRecord(
+        centerId,
+        payload.studentId,
+        normalizedDate,
+        payload.status,
+        markedBy,
+        payload.batchId
+      );
+    }
+  }
+
+  async getAttendanceHistory(
+    centerId: string,
+    filters: {
+      studentId?: string;
+      batchId?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    }
+  ) {
+    const dateFrom = filters.dateFrom ? this.normalizeDateOnly(filters.dateFrom) : undefined;
+    const dateTo = filters.dateTo ? this.normalizeDateOnly(filters.dateTo) : undefined;
+    return this._attendanceRepository.getAttendanceHistory(centerId, {
+      studentId: filters.studentId,
+      batchId: filters.batchId,
+      dateFrom,
+      dateTo,
+    });
   }
 }

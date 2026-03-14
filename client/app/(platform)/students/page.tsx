@@ -7,6 +7,7 @@ import DataTable from "@/components/dashboard/DataTable";
 import Modal from "@/components/dashboard/Modal";
 import FormInput from "@/components/dashboard/FormInput";
 import { Button } from "@/components/button";
+import { useSubscription } from "@/components/dashboard/SubscriptionContext";
 import { showErrorToast, showSuccessToast } from "@/utils/toast";
 import {
   useCreateStudent,
@@ -47,6 +48,7 @@ const toInputDate = (value: string) => {
 };
 
 export default function StudentsPage() {
+  const { isActive } = useSubscription();
   const [search, setSearch] = useState("");
   const [batchFilter, setBatchFilter] = useState("All Batches");
   const [sessionFilter, setSessionFilter] = useState("All Sessions");
@@ -262,7 +264,7 @@ export default function StudentsPage() {
               ))}
             </select>
           </div>
-          <Button onClick={openAddModal} className="gap-2">
+          <Button onClick={openAddModal} className="gap-2" disabled={!isActive}>
             <Plus className="h-4 w-4" /> Add Student
           </Button>
         </div>
@@ -308,13 +310,15 @@ export default function StudentsPage() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => openEditModal(row)}
-                    className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary"
+                    disabled={!isActive}
+                    className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => openDeleteConfirm(row)}
-                    className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary"
+                    disabled={!isActive}
+                    className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Delete
                   </button>

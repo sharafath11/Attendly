@@ -1,6 +1,8 @@
 import { FilterQuery, ProjectionType } from "mongoose";
 import { IStudentsRepository } from "../core/interfaces/repository/IStudentsRepository";
 import { StudentModel, IStudent, StudentDocument } from "../models/students.model";
+import { BaseRepository } from "./baseRepository";
+import { MESSAGES } from "../const/messages";
 
 interface FindManyOptions {
   page: number;
@@ -9,39 +11,58 @@ interface FindManyOptions {
   sort?: Record<string, 1 | -1>;
 }
 
-export class StudentsRepository implements IStudentsRepository {
-  async create(data: Partial<IStudent>): Promise<IStudent> {
-    const created = await StudentModel.create(data);
-    return created.toObject();
+export class StudentsRepository
+  extends BaseRepository<StudentDocument, IStudent>
+  implements IStudentsRepository
+{
+  constructor() {
+    super(StudentModel);
   }
 
   async findMany(filter: FilterQuery<StudentDocument>, options: FindManyOptions) {
-    const { page, limit, projection, sort } = options;
-    const skip = (page - 1) * limit;
+    try {
+      const { page, limit, projection, sort } = options;
+      const skip = (page - 1) * limit;
 
-    const [students, total] = await Promise.all([
-      StudentModel.find(filter, projection)
-        .sort(sort ?? { createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean()
-        .exec(),
-      StudentModel.countDocuments(filter),
-    ]);
+      const [students, total] = await Promise.all([
+        this.model
+          .find(filter, projection)
+          .sort(sort ?? { createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .lean()
+          .exec(),
+        this.model.countDocuments(filter),
+      ]);
 
-    return { students, total };
+      return { students, total };
+    } catch (error) {
+      throw this.handleError(error, MESSAGES.REPOSITORY.FIND_ALL_ERROR);
+    }
   }
 
   async findById(id: string, projection?: ProjectionType<IStudent>): Promise<IStudent | null> {
-    return StudentModel.findById(id, projection).lean().exec();
+    try {
+      return this.model.findById(id, projection).lean().exec();
+    } catch (error) {
+      throw this.handleError(error, MESSAGES.REPOSITORY.FIND_BY_ID_ERROR);
+    }
   }
 
   async update(id: string, data: Partial<IStudent>): Promise<IStudent | null> {
-    return StudentModel.findByIdAndUpdate(id, data, { new: true }).lean().exec();
+    try {
+      return this.model.findByIdAndUpdate(id, data, { new: true }).lean().exec();
+    } catch (error) {
+      throw this.handleError(error, MESSAGES.REPOSITORY.UPDATE_ERROR);
+    }
   }
 
   async softDelete(id: string): Promise<boolean> {
-    const result = await StudentModel.findByIdAndUpdate(id, { isDeleted: true }, { new: true }).lean().exec();
-    return Boolean(result);
+    try {
+      const result = await this.model.findByIdAndUpdate(id, { isDeleted: true }, { new: true }).lean().exec();
+      return Boolean(result);
+    } catch (error) {
+      throw this.handleError(error, MESSAGES.REPOSITORY.UPDATE_ERROR);
+    }
   }
 }

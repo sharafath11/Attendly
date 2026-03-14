@@ -4,8 +4,8 @@ import type { Student } from "@/types/students/studentTypes";
 
 interface AttendanceTableProps {
   students: Student[];
-  attendance: Record<string, "Present" | "Absent">;
-  onStatusChange: (studentId: string, status: "Present" | "Absent") => void;
+  attendance: Record<string, "present" | "absent" | "leave">;
+  onStatusChange: (studentId: string, status: "present" | "absent" | "leave") => void;
   disabled?: boolean;
 }
 
@@ -30,8 +30,8 @@ export default function AttendanceTable({
                 <input
                   type="radio"
                   name={`attendance-${student.id}`}
-                  checked={attendance[student.id] === "Present"}
-                  onChange={() => onStatusChange(student.id, "Present")}
+                  checked={attendance[student.id] === "present"}
+                  onChange={() => onStatusChange(student.id, "present")}
                   disabled={disabled}
                   className="h-4 w-4 accent-emerald-500"
                 />
@@ -41,12 +41,23 @@ export default function AttendanceTable({
                 <input
                   type="radio"
                   name={`attendance-${student.id}`}
-                  checked={attendance[student.id] === "Absent"}
-                  onChange={() => onStatusChange(student.id, "Absent")}
+                  checked={attendance[student.id] === "absent"}
+                  onChange={() => onStatusChange(student.id, "absent")}
                   disabled={disabled}
                   className="h-4 w-4 accent-rose-500"
                 />
                 <span className="font-semibold text-rose-500">Absent</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name={`attendance-${student.id}`}
+                  checked={attendance[student.id] === "leave"}
+                  onChange={() => onStatusChange(student.id, "leave")}
+                  disabled={disabled}
+                  className="h-4 w-4 accent-amber-500"
+                />
+                <span className="font-semibold text-amber-500">Leave</span>
               </label>
             </div>
           </div>
