@@ -35,3 +35,11 @@ export type TeacherAttendanceFilters = {
   dateTo?: string;
   teacherId?: string;
 };
+
+export type ApiResponse<T> = {
+  success: boolean;
+  message: string;
+  ok: boolean;
+  msg: string;
+  data: T;
+};

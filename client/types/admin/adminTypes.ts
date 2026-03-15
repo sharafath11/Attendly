@@ -62,3 +62,11 @@ export type UpdatePaymentStatusPayload = {
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;
 };
+
+export type ApiResponse<T> = {
+  success: boolean;
+  message: string;
+  ok: boolean;
+  msg: string;
+  data: T;
+};

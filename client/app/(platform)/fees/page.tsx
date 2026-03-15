@@ -12,6 +12,7 @@ import { WalletCards, AlertTriangle } from "lucide-react";
 import { useBatches } from "@/hooks/useBatches";
 import { useFees, useMarkFeePaid, useUpdateFeeStatus } from "@/hooks/useFees";
 import type { FeeRecord, FeeStatus, PaymentMethod } from "@/types/fees/feesTypes";
+import { exportToCsv } from "@/utils/exportToCsv";
 
 const monthNames = [
   "January",
@@ -131,6 +132,24 @@ export default function FeesPage() {
     setEditOpen(false);
   };
 
+  const handleDownloadCsv = () => {
+    if (!fees.length) {
+      showErrorToast("No fee records to export for the selected filters.");
+      return;
+    }
+    const rows = fees.map((fee) => ({
+      Student: fee.student?.name ?? "",
+      Batch: fee.batch?.batchName ?? "",
+      Month: monthNames[fee.month - 1],
+      Year: fee.year,
+      Amount: fee.amount,
+      Status: fee.status,
+      PaymentMethod: fee.paymentMethod ?? "",
+      PaidDate: fee.paidDate ? new Date(fee.paidDate).toLocaleDateString() : "",
+    }));
+    exportToCsv(`fees-${monthNames[month - 1]}-${year}`, rows);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -201,6 +220,13 @@ export default function FeesPage() {
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={handleDownloadCsv}
+          className="rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-secondary"
+        >
+          Download Excel (CSV)
+        </button>
       </div>
 
       {isLoading ? (

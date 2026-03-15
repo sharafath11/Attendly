@@ -1,20 +1,20 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { feesService } from "@/services/fees.service";
-import type { FeeFilters, MarkFeePaidPayload, UpdateFeeStatusPayload } from "@/types/fees/feesTypes";
+import type { ApiResponse, FeeFilters, FeeRecord, MarkFeePaidPayload, UpdateFeeStatusPayload } from "@/types/fees/feesTypes";
 
 export const useFees = (filters: FeeFilters) => {
-  return useQuery({
+  return useQuery<ApiResponse<FeeRecord[]> | null>({
     queryKey: ["fees", filters],
     queryFn: () => feesService.getFees(filters),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 };
 
 export const usePendingFees = (params?: { month?: number; year?: number }) => {
-  return useQuery({
+  return useQuery<ApiResponse<FeeRecord[]> | null>({
     queryKey: ["fees", "pending", params],
     queryFn: () => feesService.getPendingFees(params),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 };
 

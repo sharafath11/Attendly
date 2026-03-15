@@ -1,15 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { teacherPaymentsService } from "@/services/teacherPayments.service";
 import type {
+  ApiResponse,
   CreateTeacherPaymentPayload,
+  TeacherPayment,
   TeacherPaymentFilters,
 } from "@/types/teacherPayments/teacherPaymentsTypes";
 
 export const useTeacherPayments = (filters?: TeacherPaymentFilters) => {
-  return useQuery({
+  return useQuery<ApiResponse<TeacherPayment[]> | null>({
     queryKey: ["teacherPayments", filters],
     queryFn: () => teacherPaymentsService.getPayments(filters),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 };
 

@@ -12,6 +12,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { Download } from "lucide-react";
+import { exportToCsv } from "@/utils/exportToCsv";
 
 export default function AdminDashboardPage() {
   const { data: dashboardRes } = useAdminDashboard();
@@ -30,9 +32,27 @@ export default function AdminDashboardPage() {
     { label: "Monthly Revenue", value: dashboard.monthlyRevenue ?? 0 },
   ];
 
+  const handleDownloadCsv = () => {
+    const summaryRows = cards.map((card) => ({
+      Metric: card.label,
+      Value: card.value,
+    }));
+    exportToCsv("admin-dashboard-summary", summaryRows);
+  };
+
   return (
     <div className="space-y-8">
-      <p className="text-sm text-muted-foreground">Platform analytics and revenue overview.</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm text-muted-foreground">Platform analytics and revenue overview.</p>
+        <button
+          type="button"
+          onClick={handleDownloadCsv}
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-secondary"
+        >
+          <Download className="h-3 w-3" />
+          Download Excel (CSV)
+        </button>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         {cards.map((card) => (

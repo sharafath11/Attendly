@@ -14,6 +14,7 @@ import type {
   CreateTeacherPaymentPayload,
   TeacherPayment,
 } from "@/types/teacherPayments/teacherPaymentsTypes";
+import { exportToCsv } from "@/utils/exportToCsv";
 
 const monthNames = [
   "January",
@@ -104,6 +105,22 @@ export default function TeacherPaymentsPage() {
   const rows = useMemo(() => payments as TeacherPayment[], [payments]);
   const yearOptions = [getCurrentYear() - 1, getCurrentYear(), getCurrentYear() + 1];
 
+  const handleDownloadCsv = () => {
+    if (!rows.length) {
+      showErrorToast("No teacher payments to export for the selected filters.");
+      return;
+    }
+    const csvRows = rows.map((payment) => ({
+      Teacher: payment.teacher?.name ?? "",
+      Month: payment.month,
+      Year: payment.year,
+      Amount: payment.amount,
+      PaidDate: payment.paidDate ? new Date(payment.paidDate).toLocaleDateString() : "",
+      Notes: payment.notes ?? "",
+    }));
+    exportToCsv(`teacher-payments-${yearFilter === "All" ? "all" : yearFilter}`, csvRows);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -153,6 +170,13 @@ export default function TeacherPaymentsPage() {
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={handleDownloadCsv}
+          className="rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-secondary"
+        >
+          Download Excel (CSV)
+        </button>
       </div>
 
       {isLoading ? (

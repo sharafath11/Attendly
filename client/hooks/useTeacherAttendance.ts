@@ -1,15 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { teacherAttendanceService } from "@/services/teacherAttendance.service";
 import type {
+  ApiResponse,
   CreateTeacherAttendancePayload,
+  TeacherAttendance,
   TeacherAttendanceFilters,
 } from "@/types/teacherAttendance/teacherAttendanceTypes";
 
 export const useTeacherAttendance = (filters?: TeacherAttendanceFilters) => {
-  return useQuery({
+  return useQuery<ApiResponse<TeacherAttendance[]> | null>({
     queryKey: ["teacherAttendance", filters],
     queryFn: () => teacherAttendanceService.getAttendance(filters),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 };
 

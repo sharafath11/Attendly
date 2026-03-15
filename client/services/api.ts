@@ -36,11 +36,16 @@ export const postRequest = async <T = any>(
     }
     const res = await axiosInstance.post(url, body, { headers });
     
-    if (!res.data.ok) {
-      throw new Error(res.data.msg || 'Request failed');
+    // Normalize response
+    const data = res.data;
+    const ok = data.ok !== undefined ? data.ok : data.success;
+    const msg = data.msg || data.message;
+    
+    if (!ok) {
+      throw new Error(msg || 'Request failed');
     }
     
-    return res.data;
+    return { ...data, ok, msg };
   } catch (error: any) {
     handleApiError(error, options);
     return null;
@@ -55,11 +60,16 @@ export const getRequest = async <T = any>(
   try {
     const res = await axiosInstance.get(url, params ? { params } : {});
     
-    if (!res.data.ok) {
-      throw new Error(res.data.msg || 'Request failed');
+    // Normalize response
+    const data = res.data;
+    const ok = data.ok !== undefined ? data.ok : data.success;
+    const msg = data.msg || data.message;
+    
+    if (!ok) {
+      throw new Error(msg || 'Request failed');
     }
     
-    return res.data;
+    return { ...data, ok, msg };
   } catch (error: any) {
     handleApiError(error, options);
     return null;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, UserCheck2, UserX2 } from "lucide-react";
+import { BarChart3, UserCheck2, UserX2, Download } from "lucide-react";
 import AttendanceSummaryCard from "@/components/attendance/AttendanceSummaryCard";
 import BatchAttendanceChart from "@/components/attendance/BatchAttendanceChart";
 import LowAttendanceList from "@/components/attendance/LowAttendanceList";
@@ -10,6 +10,7 @@ import {
   useBatchAttendanceSummary,
   useLowAttendanceStudents,
 } from "@/hooks/useAttendance";
+import { exportToCsv } from "@/utils/exportToCsv";
 
 export default function AttendancePage() {
   const { data: batchesData } = useBatches();
@@ -33,6 +34,21 @@ export default function AttendancePage() {
   const summary = summaryData?.data;
   const lowAttendanceStudents = lowAttendanceData?.data ?? [];
 
+  const handleDownloadSummaryCsv = () => {
+    if (!summary?.dailyTrend?.length) return;
+    const rows = summary.dailyTrend.map((day: any) => ({
+      Date: day.date,
+      Present: day.present,
+      Absent: day.absent,
+      Total: day.total,
+      AttendancePercent: day.attendancePercent,
+    }));
+    exportToCsv(
+      `attendance-summary-${selectedBatch?.batchName ?? "batch"}`,
+      rows,
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -55,7 +71,8 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="grid flex-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <AttendanceSummaryCard
           title="Batch Attendance"
           value={summary?.averageAttendance ?? 0}
@@ -75,6 +92,16 @@ export default function AttendancePage() {
           icon={<UserX2 className="h-5 w-5" />}
           trend="Last 30 days"
         />
+        </div>
+        <button
+          type="button"
+          onClick={handleDownloadSummaryCsv}
+          disabled={!summary?.dailyTrend?.length}
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Download className="h-3 w-3" />
+          Download Excel (CSV)
+        </button>
       </div>
 
       <BatchAttendanceChart

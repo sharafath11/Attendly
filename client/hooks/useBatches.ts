@@ -1,24 +1,24 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { batchesService } from "@/services/batches.service";
-import { BatchFilters, CreateBatchPayload, UpdateBatchPayload } from "@/types/batches/batchTypes";
+import { ApiResponse, Batch, BatchesListResponse, BatchFilters, CreateBatchPayload, UpdateBatchPayload } from "@/types/batches/batchTypes";
 
 export const useBatches = (filters?: BatchFilters) => {
   const medium = filters?.medium ?? "";
   const session = filters?.session ?? "";
 
-  return useQuery({
+  return useQuery<ApiResponse<BatchesListResponse> | null>({
     queryKey: ["batches", medium, session],
     queryFn: () => batchesService.getBatches(filters),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 };
 
 export const useBatch = (id?: string) => {
-  return useQuery({
+  return useQuery<ApiResponse<Batch> | null>({
     queryKey: ["batches", "detail", id],
     queryFn: () => batchesService.getBatchById(id as string),
     enabled: Boolean(id),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 };
 

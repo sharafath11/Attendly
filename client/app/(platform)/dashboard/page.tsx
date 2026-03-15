@@ -11,13 +11,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Users, CalendarCheck2, WalletCards, Layers } from "lucide-react";
+import { Users, CalendarCheck2, WalletCards, Layers, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import DashboardCard from "@/components/dashboard/DashboardCard";
 import DataTable from "@/components/dashboard/DataTable";
 import ChartCard from "@/components/dashboard/ChartCard";
 import StatusBadge from "@/components/dashboard/StatusBadge";
 import mockApi from "@/services/mockApi";
+import { exportToCsv } from "@/utils/exportToCsv";
 
 const attendanceData = [
   { day: "Mon", present: 48 },
@@ -77,13 +78,46 @@ export default function DashboardPage() {
     },
   });
 
+  const handleDownloadDashboardCsv = () => {
+    const summaryRows = [
+      {
+        Metric: "Total Students",
+        Value: data.totalStudents,
+      },
+      {
+        Metric: "Today Attendance",
+        Value: data.todayAttendance,
+      },
+      {
+        Metric: "Pending Fees",
+        Value: data.pendingFees,
+      },
+      {
+        Metric: "Total Batches",
+        Value: data.totalBatches,
+      },
+    ];
+
+    exportToCsv("dashboard-summary", summaryRows);
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back! Here is what is happening with your batches today.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">
+            Welcome back! Here is what is happening with your batches today.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleDownloadDashboardCsv}
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-secondary"
+        >
+          <Download className="h-3 w-3" />
+          Download Excel (CSV)
+        </button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

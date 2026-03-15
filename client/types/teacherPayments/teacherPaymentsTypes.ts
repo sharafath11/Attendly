@@ -30,3 +30,11 @@ export type TeacherPaymentFilters = {
   month?: string;
   year?: number;
 };
+
+export type ApiResponse<T> = {
+  success: boolean;
+  message: string;
+  ok: boolean;
+  msg: string;
+  data: T;
+};

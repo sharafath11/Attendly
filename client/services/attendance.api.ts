@@ -1,13 +1,25 @@
 import { getRequest, postRequest } from "./api";
-import type { AttendanceHistoryFilters, CreateAttendancePayload } from "@/types/attendance/attendanceTypes";
+import type {
+  ApiResponse,
+  AttendanceByDate,
+  AttendanceHistoryFilters,
+  AttendanceHistoryRecord,
+  BatchAttendanceSummary,
+  CreateAttendancePayload,
+  LowAttendanceStudent,
+  StudentAttendanceSummary,
+} from "@/types/attendance/attendanceTypes";
 
 export const attendanceApi = {
-  getStudentSummary: (studentId: string) => getRequest(`/attendance/student/${studentId}/summary`),
-  getBatchSummary: (batchId: string) => getRequest(`/attendance/batch/${batchId}/summary`),
-  getLowAttendance: (batchId: string) => getRequest(`/attendance/batch/${batchId}/low-attendance`),
+  getStudentSummary: (studentId: string) =>
+    getRequest<ApiResponse<StudentAttendanceSummary>>(`/attendance/student/${studentId}/summary`),
+  getBatchSummary: (batchId: string) =>
+    getRequest<ApiResponse<BatchAttendanceSummary>>(`/attendance/batch/${batchId}/summary`),
+  getLowAttendance: (batchId: string) =>
+    getRequest<ApiResponse<LowAttendanceStudent[]>>(`/attendance/batch/${batchId}/low-attendance`),
   getAttendanceByDate: (batchId: string, date: string) =>
-    getRequest("/attendance", { batchId, date }),
+    getRequest<ApiResponse<AttendanceByDate>>("/attendance", { batchId, date }),
   getAttendanceHistory: (filters?: AttendanceHistoryFilters) =>
-    getRequest("/attendance/history", filters),
-  saveAttendance: (payload: CreateAttendancePayload) => postRequest("/attendance", payload),
+    getRequest<ApiResponse<AttendanceHistoryRecord[]>>("/attendance/history", filters),
+  saveAttendance: (payload: CreateAttendancePayload) => postRequest<ApiResponse<any>>("/attendance", payload),
 };

@@ -33,3 +33,11 @@ export type UpdateTeacherPayload = {
 export type UpdateTeacherStatusPayload = {
   status: "active" | "disabled";
 };
+
+export type ApiResponse<T> = {
+  success: boolean;
+  message: string;
+  ok: boolean;
+  msg: string;
+  data: T;
+};

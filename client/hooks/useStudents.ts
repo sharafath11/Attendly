@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { studentsService } from "@/services/students.service";
-import { CreateStudentPayload, StudentsQuery, UpdateStudentPayload } from "@/types/students/studentTypes";
+import { ApiResponse, CreateStudentPayload, Student, StudentsListResponse, StudentsQuery, UpdateStudentPayload } from "@/types/students/studentTypes";
 
 export const useStudents = (params?: StudentsQuery) => {
   const search = params?.search ?? "";
@@ -9,19 +9,19 @@ export const useStudents = (params?: StudentsQuery) => {
   const page = params?.page ?? 1;
   const limit = params?.limit ?? 10;
 
-  return useQuery({
+  return useQuery<ApiResponse<StudentsListResponse> | null>({
     queryKey: ["students", search, batchId, session, page, limit],
     queryFn: () => studentsService.getStudents(params),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 };
 
 export const useStudent = (id?: string) => {
-  return useQuery({
+  return useQuery<ApiResponse<Student> | null>({
     queryKey: ["students", "detail", id],
     queryFn: () => studentsService.getStudentById(id as string),
     enabled: Boolean(id),
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 };
 

@@ -31,6 +31,8 @@ export type BatchesListResponse = {
 };
 
 export type ApiResponse<T> = {
+  success: boolean;
+  message: string;
   ok: boolean;
   msg: string;
   data: T;

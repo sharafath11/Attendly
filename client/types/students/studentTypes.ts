@@ -38,6 +38,8 @@ export type StudentsListResponse = {
 };
 
 export type ApiResponse<T> = {
+  success: boolean;
+  message: string;
   ok: boolean;
   msg: string;
   data: T;

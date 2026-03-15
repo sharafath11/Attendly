@@ -1,17 +1,22 @@
 import { deleteRequest, getRequest, patchRequest, postRequest } from "./api";
 import {
+  ApiResponse,
   CreateTeacherPayload,
+  CreateTeacherResponse,
+  Teacher,
   UpdateTeacherPayload,
   UpdateTeacherStatusPayload,
 } from "@/types/teacher/teacherTypes";
 
 export const teacherApi = {
-  getTeachers: () => getRequest("/teachers"),
-  getTeacherById: (id: string) => getRequest(`/teachers/${id}`),
-  createTeacher: (payload: CreateTeacherPayload) => postRequest("/teachers", payload),
-  updateTeacher: (id: string, payload: UpdateTeacherPayload) => patchRequest(`/teachers/${id}`, payload),
+  getTeachers: () => getRequest<ApiResponse<Teacher[]>>("/teachers"),
+  getTeacherById: (id: string) => getRequest<ApiResponse<Teacher>>(`/teachers/${id}`),
+  createTeacher: (payload: CreateTeacherPayload) =>
+    postRequest<ApiResponse<CreateTeacherResponse>>("/teachers", payload),
+  updateTeacher: (id: string, payload: UpdateTeacherPayload) =>
+    patchRequest<ApiResponse<Teacher>>(`/teachers/${id}`, payload),
   updateTeacherStatus: (id: string, payload: UpdateTeacherStatusPayload) =>
-    patchRequest(`/teachers/${id}/status`, payload),
-  resetTeacherPassword: (id: string) => postRequest(`/teachers/${id}/reset-password`, {}),
-  deleteTeacher: (id: string) => deleteRequest(`/teachers/${id}`),
+    patchRequest<ApiResponse<any>>(`/teachers/${id}/status`, payload),
+  resetTeacherPassword: (id: string) => postRequest<ApiResponse<any>>(`/teachers/${id}/reset-password`, {}),
+  deleteTeacher: (id: string) => deleteRequest<ApiResponse<any>>(`/teachers/${id}`),
 };
