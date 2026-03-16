@@ -10,11 +10,13 @@ const ACCESS_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_IN = "7d";
 
 
+const isProd = process.env.NODE_ENV === "production";
 const cookieOptions = {
   httpOnly: true,
-  secure: false,        
-  sameSite: "lax" as const,
+  secure: isProd,
+  sameSite: (isProd ? "none" : "lax") as const,
   path: "/",
+  domain: process.env.COOKIE_DOMAIN || undefined,
 };
 
 
@@ -88,4 +90,3 @@ export const clearAdminTokens = (res: Response) => {
   res.clearCookie("adminToken", cookieOptions);
   res.clearCookie("adminRefreshToken", cookieOptions);
 };
-

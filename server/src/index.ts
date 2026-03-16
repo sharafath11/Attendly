@@ -23,7 +23,11 @@ dotenv.config();
 const app = express();
 app.use(
   cors({
-    origin: ["http://localhost:3000"],
+    origin: [
+      "http://localhost:3000",
+      "https://attendly-sage.vercel.app",
+      "https://attendly.sharafathabi.cloud",
+    ],
     credentials: true,
   })
 );
