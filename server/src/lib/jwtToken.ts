@@ -11,10 +11,11 @@ const REFRESH_EXPIRES_IN = "7d";
 
 
 const isProd = process.env.NODE_ENV === "production";
+const sameSite: "lax" | "none" = isProd ? "none" : "lax";
 const cookieOptions = {
   httpOnly: true,
   secure: isProd,
-  sameSite: (isProd ? "none" : "lax") as const,
+  sameSite,
   path: "/",
   domain: process.env.COOKIE_DOMAIN || undefined,
 };
