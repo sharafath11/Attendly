@@ -9,6 +9,7 @@ import { MESSAGES } from "../const/messages";
 import { validateBatchFilters, validateCreateBatch, validateUpdateBatch } from "../validator/batches.validator";
 import { BatchFiltersDTO, CreateBatchDTO, UpdateBatchDTO } from "../dtos/batches/batches.dto";
 import { AuthenticatedRequest } from "../shared/middleware/role.middleware";
+import { getStringParam } from "../utils/http";
 
 @injectable()
 export class BatchesController implements IBatchesController {
@@ -57,7 +58,8 @@ export class BatchesController implements IBatchesController {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
-      const batch = await this._batchesService.getBatchById(scopeId, req.params.id);
+      const batchId = getStringParam(req.params.id);
+      const batch = await this._batchesService.getBatchById(scopeId, batchId as string);
       sendResponse(res, StatusCode.OK, MESSAGES.COMMON.SUCCESS, true, batch);
     } catch (error) {
       handleControllerError(res, error);
@@ -73,7 +75,8 @@ export class BatchesController implements IBatchesController {
       }
 
       const payload = validateUpdateBatch(req.body as UpdateBatchDTO);
-      const batch = await this._batchesService.updateBatch(scopeId, req.params.id, payload);
+      const batchId = getStringParam(req.params.id);
+      const batch = await this._batchesService.updateBatch(scopeId, batchId as string, payload);
       sendResponse(res, StatusCode.OK, "Batch updated successfully", true, batch);
     } catch (error) {
       handleControllerError(res, error);
@@ -88,7 +91,8 @@ export class BatchesController implements IBatchesController {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
-      await this._batchesService.deleteBatch(scopeId, req.params.id);
+      const batchId = getStringParam(req.params.id);
+      await this._batchesService.deleteBatch(scopeId, batchId as string);
       sendResponse(res, StatusCode.OK, "Batch deleted successfully", true);
     } catch (error) {
       handleControllerError(res, error);

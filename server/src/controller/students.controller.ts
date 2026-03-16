@@ -13,6 +13,7 @@ import {
 } from "../validator/students.validator";
 import { CreateStudentDTO, StudentQueryDTO, UpdateStudentDTO } from "../dtos/students/students.dto";
 import { AuthenticatedRequest } from "../shared/middleware/role.middleware";
+import { getStringParam } from "../utils/http";
 
 @injectable()
 export class StudentsController implements IStudentsController {
@@ -62,7 +63,8 @@ export class StudentsController implements IStudentsController {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
-      const student = await this._studentsService.getStudentById(scopeId, req.params.id);
+      const studentId = getStringParam(req.params.id);
+      const student = await this._studentsService.getStudentById(scopeId, studentId as string);
       sendResponse(res, StatusCode.OK, MESSAGES.COMMON.SUCCESS, true, student);
     } catch (error) {
       handleControllerError(res, error);
@@ -80,7 +82,8 @@ export class StudentsController implements IStudentsController {
       const payload = req.body as UpdateStudentDTO;
       validateUpdateStudent(payload);
 
-      const student = await this._studentsService.updateStudent(scopeId, req.params.id, payload);
+      const studentId = getStringParam(req.params.id);
+      const student = await this._studentsService.updateStudent(scopeId, studentId as string, payload);
       sendResponse(res, StatusCode.OK, "Student updated successfully", true, student);
     } catch (error) {
       handleControllerError(res, error);
@@ -95,7 +98,8 @@ export class StudentsController implements IStudentsController {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
-      await this._studentsService.deleteStudent(scopeId, req.params.id);
+      const studentId = getStringParam(req.params.id);
+      await this._studentsService.deleteStudent(scopeId, studentId as string);
       sendResponse(res, StatusCode.OK, "Student deleted successfully", true);
     } catch (error) {
       handleControllerError(res, error);

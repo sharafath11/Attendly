@@ -13,6 +13,7 @@ import {
 } from "../validator/teacher.validator";
 import { AuthenticatedRequest } from "../shared/middleware/role.middleware";
 import { MESSAGES } from "../const/messages";
+import { getStringParam } from "../utils/http";
 
 @injectable()
 export class TeacherController implements ITeacherController {
@@ -56,8 +57,9 @@ export class TeacherController implements ITeacherController {
         throwError(MESSAGES.AUTH.AUTH_REQUIRED, StatusCode.UNAUTHORIZED);
       }
 
-      validateTeacherIdParam(req.params.id);
-      const result = await this._teacherService.getTeacherById(authUserId, req.params.id);
+      const teacherId = getStringParam(req.params.id);
+      validateTeacherIdParam(teacherId);
+      const result = await this._teacherService.getTeacherById(authUserId, teacherId as string);
       sendResponse(res, StatusCode.OK, MESSAGES.COMMON.SUCCESS, true, result);
     } catch (error) {
       handleControllerError(res, error);
@@ -71,8 +73,9 @@ export class TeacherController implements ITeacherController {
         throwError(MESSAGES.AUTH.AUTH_REQUIRED, StatusCode.UNAUTHORIZED);
       }
 
-      validateTeacherIdParam(req.params.id);
-      await this._teacherService.deleteTeacher(authUserId, req.params.id);
+      const teacherId = getStringParam(req.params.id);
+      validateTeacherIdParam(teacherId);
+      await this._teacherService.deleteTeacher(authUserId, teacherId as string);
       sendResponse(res, StatusCode.OK, "Teacher account removed successfully", true);
     } catch (error) {
       handleControllerError(res, error);
@@ -86,9 +89,10 @@ export class TeacherController implements ITeacherController {
         throwError(MESSAGES.AUTH.AUTH_REQUIRED, StatusCode.UNAUTHORIZED);
       }
 
-      validateTeacherIdParam(req.params.id);
+      const teacherId = getStringParam(req.params.id);
+      validateTeacherIdParam(teacherId);
       validateTeacherStatusUpdate(req.body);
-      const result = await this._teacherService.updateTeacherStatus(authUserId, req.params.id, req.body);
+      const result = await this._teacherService.updateTeacherStatus(authUserId, teacherId as string, req.body);
       sendResponse(res, StatusCode.OK, "Teacher status updated successfully", true, result);
     } catch (error) {
       handleControllerError(res, error);
@@ -102,9 +106,10 @@ export class TeacherController implements ITeacherController {
         throwError(MESSAGES.AUTH.AUTH_REQUIRED, StatusCode.UNAUTHORIZED);
       }
 
-      validateTeacherIdParam(req.params.id);
+      const teacherId = getStringParam(req.params.id);
+      validateTeacherIdParam(teacherId);
       validateUpdateTeacher(req.body);
-      const result = await this._teacherService.updateTeacher(authUserId, req.params.id, req.body);
+      const result = await this._teacherService.updateTeacher(authUserId, teacherId as string, req.body);
       sendResponse(res, StatusCode.OK, "Teacher updated successfully", true, result);
     } catch (error) {
       handleControllerError(res, error);
@@ -118,8 +123,9 @@ export class TeacherController implements ITeacherController {
         throwError(MESSAGES.AUTH.AUTH_REQUIRED, StatusCode.UNAUTHORIZED);
       }
 
-      validateTeacherIdParam(req.params.id);
-      const result = await this._teacherService.resetTeacherPassword(authUserId, req.params.id);
+      const teacherId = getStringParam(req.params.id);
+      validateTeacherIdParam(teacherId);
+      const result = await this._teacherService.resetTeacherPassword(authUserId, teacherId as string);
       sendResponse(res, StatusCode.OK, "Teacher password reset", true, result);
     } catch (error) {
       handleControllerError(res, error);

@@ -15,6 +15,7 @@ import {
 } from "../validator/attendance.validator";
 import { CreateAttendanceDTO } from "../dtos/attendance/attendance.dto";
 import { AuthenticatedRequest } from "../shared/middleware/role.middleware";
+import { getStringParam } from "../utils/http";
 
 @injectable()
 export class AttendanceController implements IAttendanceController {
@@ -30,11 +31,12 @@ export class AttendanceController implements IAttendanceController {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
-      validateStudentIdParam(req.params.studentId);
+      const studentId = getStringParam(req.params.studentId);
+      validateStudentIdParam(studentId);
 
       const result = await this._attendanceService.getStudentAttendanceSummary(
         scopeId,
-        req.params.studentId
+        studentId as string
       );
       sendResponse(res, StatusCode.OK, MESSAGES.COMMON.SUCCESS, true, result);
     } catch (error) {
@@ -50,11 +52,12 @@ export class AttendanceController implements IAttendanceController {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
-      validateBatchIdParam(req.params.batchId);
+      const batchId = getStringParam(req.params.batchId);
+      validateBatchIdParam(batchId);
 
       const result = await this._attendanceService.getBatchAttendanceSummary(
         scopeId,
-        req.params.batchId
+        batchId as string
       );
       sendResponse(res, StatusCode.OK, MESSAGES.COMMON.SUCCESS, true, result);
     } catch (error) {
@@ -70,11 +73,12 @@ export class AttendanceController implements IAttendanceController {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
-      validateBatchIdParam(req.params.batchId);
+      const batchId = getStringParam(req.params.batchId);
+      validateBatchIdParam(batchId);
 
       const result = await this._attendanceService.getLowAttendanceStudents(
         scopeId,
-        req.params.batchId
+        batchId as string
       );
       sendResponse(res, StatusCode.OK, MESSAGES.COMMON.SUCCESS, true, result);
     } catch (error) {
@@ -90,7 +94,8 @@ export class AttendanceController implements IAttendanceController {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
-      const { batchId, date } = req.query as { batchId?: string; date?: string };
+      const batchId = getStringParam(req.query.batchId);
+      const date = getStringParam(req.query.date);
       validateAttendanceQuery(batchId, date);
 
       const result = await this._attendanceService.getAttendanceByBatchAndDate(
@@ -135,11 +140,11 @@ export class AttendanceController implements IAttendanceController {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
-      const filters = validateAttendanceHistoryFilters(req.query as {
-        studentId?: string;
-        batchId?: string;
-        dateFrom?: string;
-        dateTo?: string;
+      const filters = validateAttendanceHistoryFilters({
+        studentId: getStringParam(req.query.studentId),
+        batchId: getStringParam(req.query.batchId),
+        dateFrom: getStringParam(req.query.dateFrom),
+        dateTo: getStringParam(req.query.dateTo),
       });
 
       const records = await this._attendanceService.getAttendanceHistory(scopeId, filters);

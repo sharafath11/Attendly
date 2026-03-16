@@ -1,10 +1,11 @@
 import mongoose from "mongoose";
 import { BaseRepository } from "./baseRepository";
-import { FeeDocument, FeeModel, IFee } from "../models/fees.model";
+import { FeeDocument, FeeModel, FeeStatus, IFee } from "../models/fees.model";
 import { StudentModel } from "../models/students.model";
 import { IFeesRepository } from "../core/interfaces/repository/IFeesRepository";
 import { FeeFiltersDTO, FeeRecordDTO, MarkFeePaidDTO, UpdateFeeStatusDTO } from "../dtos/fees/fees.dto";
 import { MESSAGES } from "../const/messages";
+import { AnyBulkWriteOperation } from "mongodb";
 
 export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements IFeesRepository {
   constructor() {
@@ -15,7 +16,7 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
     try {
       const centerObjectId = new mongoose.Types.ObjectId(centerId);
       const studentFilter: Record<string, unknown> = {
-        $or: [{ centerId: centerObjectId }, { userId: centerId }],
+        $or: [{ centerId: centerObjectId }, { userId: centerObjectId }],
         isDeleted: false,
       };
       if (filters.batchId) {
@@ -33,7 +34,7 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
 
       const existingFees = await this.model
         .find({
-          $or: [{ centerId: centerObjectId }, { userId: centerId }],
+          $or: [{ centerId: centerObjectId }, { userId: centerObjectId }],
           studentId: { $in: studentIds },
           month: filters.month,
           year: filters.year,
@@ -45,12 +46,13 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
       const existingSet = new Set(existingFees.map((fee) => fee.studentId.toString()));
       const now = new Date();
 
-      const operations = students
+      const pendingStatus: FeeStatus = "Pending";
+      const operations: AnyBulkWriteOperation<FeeDocument>[] = students
         .filter((student) => !existingSet.has(student._id.toString()))
         .map((student) => ({
           updateOne: {
             filter: {
-              $or: [{ centerId: centerObjectId }, { userId: centerId }],
+              $or: [{ centerId: centerObjectId }, { userId: centerObjectId }],
               studentId: student._id,
               month: filters.month,
               year: filters.year,
@@ -64,7 +66,7 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
                 month: filters.month,
                 year: filters.year,
                 amount: student.monthlyFee,
-                status: "Pending",
+                status: pendingStatus,
                 createdAt: now,
               },
             },

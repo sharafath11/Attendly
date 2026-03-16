@@ -6,6 +6,7 @@ import { TYPES } from "../core/types";
 import { handleControllerError, sendResponse } from "../utils/response";
 import { StatusCode } from "../enums/statusCode";
 import { validateBlockCenter, validateCenterIdParam, validateUpdatePaymentStatus, validateUserIdParam } from "../validator/admin.validator";
+import { getStringParam } from "../utils/http";
 
 @injectable()
 export class AdminController implements IAdminController {
@@ -42,8 +43,9 @@ export class AdminController implements IAdminController {
 
   async getCenterById(req: Request, res: Response): Promise<void> {
     try {
-      validateCenterIdParam(req.params.id);
-      const result = await this._adminService.getCenterById(req.params.id);
+      const centerId = getStringParam(req.params.id);
+      validateCenterIdParam(centerId);
+      const result = await this._adminService.getCenterById(centerId as string);
       sendResponse(res, StatusCode.OK, "Center details", true, result);
     } catch (error) {
       handleControllerError(res, error);
@@ -52,9 +54,10 @@ export class AdminController implements IAdminController {
 
   async blockCenter(req: Request, res: Response): Promise<void> {
     try {
-      validateCenterIdParam(req.params.id);
+      const centerId = getStringParam(req.params.id);
+      validateCenterIdParam(centerId);
       validateBlockCenter(req.body);
-      const result = await this._adminService.blockCenter(req.params.id, req.body);
+      const result = await this._adminService.blockCenter(centerId as string, req.body);
       sendResponse(res, StatusCode.OK, "Center blocked successfully", true, result);
     } catch (error) {
       handleControllerError(res, error);
@@ -63,8 +66,9 @@ export class AdminController implements IAdminController {
 
   async unblockCenter(req: Request, res: Response): Promise<void> {
     try {
-      validateCenterIdParam(req.params.id);
-      const result = await this._adminService.unblockCenter(req.params.id);
+      const centerId = getStringParam(req.params.id);
+      validateCenterIdParam(centerId);
+      const result = await this._adminService.unblockCenter(centerId as string);
       sendResponse(res, StatusCode.OK, "Center unblocked successfully", true, result);
     } catch (error) {
       handleControllerError(res, error);
@@ -73,9 +77,10 @@ export class AdminController implements IAdminController {
 
   async updatePaymentStatus(req: Request, res: Response): Promise<void> {
     try {
-      validateCenterIdParam(req.params.id);
+      const centerId = getStringParam(req.params.id);
+      validateCenterIdParam(centerId);
       validateUpdatePaymentStatus(req.body);
-      const result = await this._adminService.updatePaymentStatus(req.params.id, req.body);
+      const result = await this._adminService.updatePaymentStatus(centerId as string, req.body);
       sendResponse(res, StatusCode.OK, "Payment status updated", true, result);
     } catch (error) {
       handleControllerError(res, error);
@@ -84,8 +89,9 @@ export class AdminController implements IAdminController {
 
   async verifyCenter(req: Request, res: Response): Promise<void> {
     try {
-      validateCenterIdParam(req.params.id);
-      const result = await this._adminService.verifyCenter(req.params.id);
+      const centerId = getStringParam(req.params.id);
+      validateCenterIdParam(centerId);
+      const result = await this._adminService.verifyCenter(centerId as string);
       sendResponse(res, StatusCode.OK, "Center verified", true, result);
     } catch (error) {
       handleControllerError(res, error);
@@ -94,8 +100,9 @@ export class AdminController implements IAdminController {
 
   async rejectCenter(req: Request, res: Response): Promise<void> {
     try {
-      validateCenterIdParam(req.params.id);
-      const result = await this._adminService.rejectCenter(req.params.id);
+      const centerId = getStringParam(req.params.id);
+      validateCenterIdParam(centerId);
+      const result = await this._adminService.rejectCenter(centerId as string);
       sendResponse(res, StatusCode.OK, "Center rejected", true, result);
     } catch (error) {
       handleControllerError(res, error);
@@ -104,8 +111,9 @@ export class AdminController implements IAdminController {
 
   async verifySubscriptionPayment(req: Request, res: Response): Promise<void> {
     try {
-      validateCenterIdParam(req.params.centerId);
-      const result = await this._adminService.verifySubscriptionPayment(req.params.centerId);
+      const centerId = getStringParam(req.params.centerId);
+      validateCenterIdParam(centerId);
+      const result = await this._adminService.verifySubscriptionPayment(centerId as string);
       sendResponse(res, StatusCode.OK, "Subscription activated successfully.", true, result);
     } catch (error) {
       handleControllerError(res, error);
@@ -114,8 +122,9 @@ export class AdminController implements IAdminController {
 
   async rejectSubscriptionPayment(req: Request, res: Response): Promise<void> {
     try {
-      validateCenterIdParam(req.params.centerId);
-      const result = await this._adminService.rejectSubscriptionPayment(req.params.centerId);
+      const centerId = getStringParam(req.params.centerId);
+      validateCenterIdParam(centerId);
+      const result = await this._adminService.rejectSubscriptionPayment(centerId as string);
       sendResponse(res, StatusCode.OK, "Payment not verified.", true, result);
     } catch (error) {
       handleControllerError(res, error);
@@ -124,8 +133,9 @@ export class AdminController implements IAdminController {
 
   async verifyUser(req: Request, res: Response): Promise<void> {
     try {
-      validateUserIdParam(req.params.id);
-      const result = await this._adminService.verifyUser(req.params.id);
+      const userId = getStringParam(req.params.id);
+      validateUserIdParam(userId);
+      const result = await this._adminService.verifyUser(userId as string);
       sendResponse(res, StatusCode.OK, "User verified", true, result);
     } catch (error) {
       handleControllerError(res, error);
@@ -134,8 +144,9 @@ export class AdminController implements IAdminController {
 
   async unverifyUser(req: Request, res: Response): Promise<void> {
     try {
-      validateUserIdParam(req.params.id);
-      const result = await this._adminService.unverifyUser(req.params.id);
+      const userId = getStringParam(req.params.id);
+      validateUserIdParam(userId);
+      const result = await this._adminService.unverifyUser(userId as string);
       sendResponse(res, StatusCode.OK, "User unverified", true, result);
     } catch (error) {
       handleControllerError(res, error);
