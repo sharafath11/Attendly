@@ -3,7 +3,7 @@ import { inject, injectable } from "tsyringe";
 import { IAttendanceController } from "../core/interfaces/controllers/IAttendanceController";
 import { IAttendanceService } from "../core/interfaces/services/IAttendanceService";
 import { TYPES } from "../core/types";
-import { handleControllerError, sendResponse } from "../utils/response";
+import { handleControllerError, sendResponse, throwError } from "../utils/response";
 import { StatusCode } from "../enums/statusCode";
 import { MESSAGES } from "../const/messages";
 import {
@@ -33,6 +33,9 @@ export class AttendanceController implements IAttendanceController {
 
       const studentId = getStringParam(req.params.studentId);
       validateStudentIdParam(studentId);
+      if (!studentId) {
+        throwError("Invalid student id", StatusCode.BAD_REQUEST);
+      }
 
       const result = await this._attendanceService.getStudentAttendanceSummary(
         scopeId,
@@ -54,6 +57,9 @@ export class AttendanceController implements IAttendanceController {
 
       const batchId = getStringParam(req.params.batchId);
       validateBatchIdParam(batchId);
+      if (!batchId) {
+        throwError("Invalid batch id", StatusCode.BAD_REQUEST);
+      }
 
       const result = await this._attendanceService.getBatchAttendanceSummary(
         scopeId,
@@ -75,6 +81,9 @@ export class AttendanceController implements IAttendanceController {
 
       const batchId = getStringParam(req.params.batchId);
       validateBatchIdParam(batchId);
+      if (!batchId) {
+        throwError("Invalid batch id", StatusCode.BAD_REQUEST);
+      }
 
       const result = await this._attendanceService.getLowAttendanceStudents(
         scopeId,

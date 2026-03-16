@@ -5,7 +5,6 @@ import { StudentModel } from "../models/students.model";
 import { IFeesRepository } from "../core/interfaces/repository/IFeesRepository";
 import { FeeFiltersDTO, FeeRecordDTO, MarkFeePaidDTO, UpdateFeeStatusDTO } from "../dtos/fees/fees.dto";
 import { MESSAGES } from "../const/messages";
-import { AnyBulkWriteOperation } from "mongodb";
 
 export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements IFeesRepository {
   constructor() {
@@ -47,7 +46,7 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
       const now = new Date();
 
       const pendingStatus: FeeStatus = "Pending";
-      const operations: AnyBulkWriteOperation<FeeDocument>[] = students
+      const operations: Parameters<typeof this.model.bulkWrite>[0] = students
         .filter((student) => !existingSet.has(student._id.toString()))
         .map((student) => ({
           updateOne: {
