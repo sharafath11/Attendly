@@ -69,7 +69,7 @@ export class AuthService implements IAuthService {
     const user =
       (await this._authRepo.findOne({ email: identifier })) ??
       (await this._authRepo.findOne({ username: identifier }));
-    if (!user) throwError(MESSAGES.AUTH.NOT_FOUND);
+    if (!user) throwError(MESSAGES.AUTH.INVALID_CREDENTIALS);
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throwError(MESSAGES.AUTH.INVALID_CREDENTIALS);

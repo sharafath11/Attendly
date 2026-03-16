@@ -24,6 +24,15 @@ const handleApiError = (error: any, options: ApiOptions) => {
   }
 };
 
+const extractErrorMessage = (error: any) => {
+  return (
+    error?.response?.data?.msg ||
+    error?.response?.data?.message ||
+    error?.message ||
+    "Request failed"
+  );
+};
+
 export const postRequest = async <T = any>(
   url: string,
   body: object | FormData,
@@ -48,7 +57,11 @@ export const postRequest = async <T = any>(
     return { ...data, ok, msg };
   } catch (error: any) {
     handleApiError(error, options);
-    return null;
+    return {
+      ok: false,
+      msg: extractErrorMessage(error),
+      status: error?.response?.status,
+    } as any;
   }
 };
 
@@ -72,7 +85,11 @@ export const getRequest = async <T = any>(
     return { ...data, ok, msg };
   } catch (error: any) {
     handleApiError(error, options);
-    return null;
+    return {
+      ok: false,
+      msg: extractErrorMessage(error),
+      status: error?.response?.status,
+    } as any;
   }
 };
 
@@ -93,7 +110,11 @@ export const patchRequest = async <T = any>(
     return res.data;
   } catch (error: any) {
     handleApiError(error, options);
-    return null;
+    return {
+      ok: false,
+      msg: extractErrorMessage(error),
+      status: error?.response?.status,
+    } as any;
   }
 };
 export const putRequest = async <T = any>(
@@ -115,7 +136,11 @@ export const putRequest = async <T = any>(
     return res.data;
   } catch (error: any) {
     handleApiError(error, options);
-    return null;
+    return {
+      ok: false,
+      msg: extractErrorMessage(error),
+      status: error?.response?.status,
+    } as any;
   }
 };
 export const deleteRequest = async <T = any>(
@@ -133,6 +158,10 @@ export const deleteRequest = async <T = any>(
     return res.data;
   } catch (error: any) {
     handleApiError(error, options);
-    return null;
+    return {
+      ok: false,
+      msg: extractErrorMessage(error),
+      status: error?.response?.status,
+    } as any;
   }
 };
