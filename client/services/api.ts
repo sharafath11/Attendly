@@ -7,7 +7,7 @@ type ApiOptions = {
 };
 
 const defaultOptions: ApiOptions = {
-  showToast: true,
+  showToast: false,
 };
 
 const handleApiError = (error: any, options: ApiOptions) => {

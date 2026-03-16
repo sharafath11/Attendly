@@ -11,8 +11,8 @@ export const userAuthMethods = {
   register: (payload: RegisterPayload) => post("/auth/signup", payload),
   verifyOtp: (payload: VerifyOtpPayload) => post("/auth/verify-otp", payload),
   resendOtp: (payload: ResendOtpPayload) => post("/auth/resend-otp", payload),
-  login: (payload: LoginPayload) => post("/auth/login", payload),
-  googleAuth: (payload: GoogleAuthPayload) => post("/auth/google", payload),
+  login: (payload: LoginPayload) => post("/auth/login", payload, { showToast: false }),
+  googleAuth: (payload: GoogleAuthPayload) => post("/auth/google", payload, { showToast: false }),
   me: () => get("/auth/me"),
   logout: () => post("/auth/logout", {}),
 }
