@@ -103,24 +103,24 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl lg:text-3xl">Dashboard</h1>
+          <p className="text-sm text-muted-foreground sm:text-base">
             Welcome back! Here is what is happening with your batches today.
           </p>
         </div>
         <button
           type="button"
           onClick={handleDownloadDashboardCsv}
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-secondary"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-secondary sm:w-auto"
         >
           <Download className="h-3 w-3" />
           Download Excel (CSV)
         </button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <DashboardCard
           title="Total Students"
           value={data.totalStudents}
@@ -147,7 +147,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         <ChartCard title="Weekly Attendance" subtitle="Students present per day">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={attendanceData} margin={{ left: -20, right: 10 }}>
@@ -185,11 +185,11 @@ export default function DashboardPage() {
         </ChartCard>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="space-y-6">
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Recent Attendance</h2>
-            <p className="text-xs text-muted-foreground">Latest marked records</p>
+            <h2 className="text-base font-semibold text-foreground sm:text-lg">Recent Attendance</h2>
+            <p className="text-xs text-muted-foreground sm:text-sm">Latest marked records</p>
           </div>
           <DataTable
             columns={[
@@ -205,8 +205,8 @@ export default function DashboardPage() {
           />
 
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Recent Fee Payments</h2>
-            <p className="text-xs text-muted-foreground">Latest successful transactions</p>
+            <h2 className="text-base font-semibold text-foreground sm:text-lg">Recent Fee Payments</h2>
+            <p className="text-xs text-muted-foreground sm:text-sm">Latest successful transactions</p>
           </div>
           <DataTable
             columns={[
@@ -218,9 +218,9 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-foreground">Upcoming Classes</h2>
-          <p className="text-xs text-muted-foreground">Next 48 hours</p>
+        <div className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
+          <h2 className="text-base font-semibold text-foreground sm:text-lg">Upcoming Classes</h2>
+          <p className="text-xs text-muted-foreground sm:text-sm">Next 48 hours</p>
           <div className="mt-4 space-y-4">
             {upcomingClasses.map((session) => (
               <div key={session.id} className="rounded-lg border border-border p-3">

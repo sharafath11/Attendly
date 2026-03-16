@@ -42,31 +42,31 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">Platform analytics and revenue overview.</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground sm:text-base">Platform analytics and revenue overview.</p>
         <button
           type="button"
           onClick={handleDownloadCsv}
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-secondary"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-secondary sm:w-auto"
         >
           <Download className="h-3 w-3" />
           Download Excel (CSV)
         </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => (
           <div key={card.label} className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <p className="text-xs uppercase text-muted-foreground">{card.label}</p>
-            <p className="mt-2 text-2xl font-semibold">{card.value}</p>
+            <p className="mt-2 text-xl font-semibold sm:text-2xl">{card.value}</p>
           </div>
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-4">
-          <h2 className="text-sm font-semibold">Revenue Growth</h2>
-          <div className="mt-4 h-64">
+          <h2 className="text-sm font-semibold sm:text-base">Revenue Growth</h2>
+          <div className="mt-4 h-56 sm:h-64 lg:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={charts.revenueByMonth}>
                 <XAxis dataKey="month" />
@@ -78,8 +78,8 @@ export default function AdminDashboardPage() {
           </div>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
-          <h2 className="text-sm font-semibold">Centers Growth</h2>
-          <div className="mt-4 h-64">
+          <h2 className="text-sm font-semibold sm:text-base">Centers Growth</h2>
+          <div className="mt-4 h-56 sm:h-64 lg:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.centersGrowth}>
                 <XAxis dataKey="month" />

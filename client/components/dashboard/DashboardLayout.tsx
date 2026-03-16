@@ -110,8 +110,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 Your subscription will expire in {warningDays} days. Please renew to avoid service interruption.
               </div>
             )}
-            <main className="flex-1 px-4 py-6 lg:px-6 dashboard-grid">
-              <PageTransition>{children}</PageTransition>
+            <main className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
+              <div className="mx-auto w-full max-w-[1440px]">
+                <PageTransition>{children}</PageTransition>
+              </div>
             </main>
           </div>
         </div>

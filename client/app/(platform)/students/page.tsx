@@ -287,7 +287,7 @@ export default function StudentsPage() {
               ),
             },
             { key: "phone", header: "Phone" },
-            { key: "parentPhone", header: "Parent Phone" },
+            { key: "parentPhone", header: "Parent Phone", hideOnMobile: true },
             {
               key: "batchId",
               header: "Batch",
@@ -301,6 +301,7 @@ export default function StudentsPage() {
             {
               key: "joinDate",
               header: "Join Date",
+              hideOnMobile: true,
               render: (row) => new Date(row.joinDate).toLocaleDateString(),
             },
             {

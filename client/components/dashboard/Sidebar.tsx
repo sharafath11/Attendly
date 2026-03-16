@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import gsap from "gsap";
@@ -48,8 +48,9 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
   const pathname = usePathname();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLButtonElement>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
 
-  const width = collapsed ? 86 : 260;
+  const width = isDesktop ? (collapsed ? 86 : 260) : 280;
 
   useEffect(() => {
     if (!sidebarRef.current) return;
@@ -61,8 +62,15 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
   }, [width]);
 
   useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(media.matches);
+    update();
+    media.addEventListener?.("change", update);
+    return () => media.removeEventListener?.("change", update);
+  }, []);
+
+  useEffect(() => {
     if (!sidebarRef.current) return;
-    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
     if (isDesktop) {
       gsap.set(sidebarRef.current, { x: 0 });
       gsap.set(overlayRef.current, { autoAlpha: 0 });
