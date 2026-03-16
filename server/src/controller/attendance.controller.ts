@@ -32,10 +32,10 @@ export class AttendanceController implements IAttendanceController {
       }
 
       const studentId = getStringParam(req.params.studentId);
-      validateStudentIdParam(studentId);
       if (!studentId) {
         throwError("Invalid student id", StatusCode.BAD_REQUEST);
       }
+      validateStudentIdParam(studentId);
 
       const result = await this._attendanceService.getStudentAttendanceSummary(
         scopeId,
@@ -56,10 +56,10 @@ export class AttendanceController implements IAttendanceController {
       }
 
       const batchId = getStringParam(req.params.batchId);
-      validateBatchIdParam(batchId);
       if (!batchId) {
         throwError("Invalid batch id", StatusCode.BAD_REQUEST);
       }
+      validateBatchIdParam(batchId);
 
       const result = await this._attendanceService.getBatchAttendanceSummary(
         scopeId,
@@ -80,10 +80,10 @@ export class AttendanceController implements IAttendanceController {
       }
 
       const batchId = getStringParam(req.params.batchId);
-      validateBatchIdParam(batchId);
       if (!batchId) {
         throwError("Invalid batch id", StatusCode.BAD_REQUEST);
       }
+      validateBatchIdParam(batchId);
 
       const result = await this._attendanceService.getLowAttendanceStudents(
         scopeId,
