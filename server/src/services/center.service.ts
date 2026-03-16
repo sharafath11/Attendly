@@ -18,9 +18,9 @@ export class CenterService implements ICenterService {
 
   private getPlanLimits(planType: "basic" | "pro") {
     if (planType === "basic") {
-      return { teacherLimit: 5, studentLimit: 150, monthlyFee: 250, planName: "Basic Plan" };
+      return { teacherLimit: 5, studentLimit: 150, monthlyFee: 199, planName: "Basic Plan" };
     }
-    return { teacherLimit: 10, studentLimit: 400, monthlyFee: 500, planName: "Pro Plan" };
+    return { teacherLimit: 10, studentLimit: 400, monthlyFee: 299, planName: "Pro Plan" };
   }
 
   async registerCenter(payload: CenterRegistrationDTO): Promise<void> {

@@ -85,8 +85,8 @@ export default function RegisterCenterPage() {
             onChange={handleChange}
             className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
           >
-            <option value="basic">Basic – ₹250/month – 5 teachers – 150 students</option>
-            <option value="pro">Pro – ₹500/month – 10 teachers – 400 students</option>
+            <option value="basic">Basic – ₹199/month – 5 teachers – 150 students</option>
+            <option value="pro">Pro – ₹299/month – 10 teachers – 400 students</option>
           </select>
         </div>
 

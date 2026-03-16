@@ -299,7 +299,7 @@ export default function DemoPage() {
                 </div>
               </div>
               <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-3xl font-bold">₹250</span>
+                <span className="text-3xl font-bold">₹199</span>
                 <span className="text-xs text-muted-foreground">/ month</span>
               </div>
               <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
@@ -345,7 +345,7 @@ export default function DemoPage() {
                 </div>
               </div>
               <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-3xl font-bold">₹500</span>
+                <span className="text-3xl font-bold">₹299</span>
                 <span className="text-xs text-muted-foreground">/ month</span>
               </div>
               <ul className="mt-4 space-y-2 text-sm text-muted-foreground">

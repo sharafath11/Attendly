@@ -1,0 +1,15 @@
+{
+  "name": "attendly-monorepo",
+  "private": true,
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "build": "npm --workspace server run build",
+    "start": "npm --workspace server run start",
+    "dev": "npm --workspace server run dev",
+    "client:build": "npm --workspace client run build",
+    "client:dev": "npm --workspace client run dev"
+  }
+}
