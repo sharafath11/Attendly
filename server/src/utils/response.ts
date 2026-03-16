@@ -10,12 +10,12 @@ export function throwError(message: string, statusCode = 400): never {
 export function sendResponse<T>(
   res: Response,
   status: number,
-  message: string,
-  success: boolean,
+  msg: string,
+  ok: boolean,
   data?: T
 ): void {
   
-  res.status(status).json({ success, message, data });
+  res.status(status).json({ ok, msg, data });
 }
 export function handleControllerError(
   res: Response,
