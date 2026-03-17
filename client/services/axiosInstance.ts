@@ -1,10 +1,23 @@
 import axios from "axios";
 
 export const baseURL = process.env.NEXT_PUBLIC_BASEURL;
+const AUTH_DEBUG = process.env.NEXT_PUBLIC_DEBUG_AUTH === "true";
 
 const axiosInstance = axios.create({
   baseURL,
   withCredentials: true,
+});
+
+axiosInstance.interceptors.request.use((config) => {
+  if (AUTH_DEBUG) {
+    console.log("[AuthDebug] axios:request", {
+      baseURL,
+      url: config.url,
+      method: config.method,
+      withCredentials: config.withCredentials ?? true,
+    });
+  }
+  return config;
 });
 
 let isRefreshing = false;
@@ -33,7 +46,15 @@ const processAdminQueue = (error: any) => {
 };
 
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (AUTH_DEBUG) {
+      console.log("[AuthDebug] axios:response", {
+        url: response.config?.url,
+        status: response.status,
+      });
+    }
+    return response;
+  },
 
   async (error) => {
     const originalRequest = error.config;

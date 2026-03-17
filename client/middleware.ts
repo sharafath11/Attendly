@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
+const AUTH_DEBUG = process.env.NEXT_PUBLIC_DEBUG_AUTH === "true"
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
@@ -20,6 +22,16 @@ export function middleware(request: NextRequest) {
   const isDashboard = pathname.startsWith("/dashboard")
   const isAdmin = pathname.startsWith("/admin")
   const isAdminLogin = pathname === "/admin/login"
+
+  if (AUTH_DEBUG) {
+    console.log("[AuthDebug] middleware", {
+      path: pathname,
+      hasToken: Boolean(token),
+      hasRefreshToken: Boolean(refreshToken),
+      hasAdminToken: Boolean(adminToken),
+      hasAdminRefreshToken: Boolean(adminRefreshToken),
+    })
+  }
 
   if (isAuthenticated || isAdminAuthenticated) {
     if (isAuthPage || isPublicPage) {

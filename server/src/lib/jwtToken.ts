@@ -14,8 +14,24 @@ const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "none" as const,
-  domain: ".sharafathabi.cloud",
+  ...(process.env.COOKIE_DOMAIN
+    ? { domain: process.env.COOKIE_DOMAIN }
+    : {}),
   path: "/",
+};
+
+const AUTH_DEBUG = process.env.AUTH_DEBUG === "true";
+
+const logCookieSet = (res: Response, label: string) => {
+  if (!AUTH_DEBUG) return;
+  const setCookie = res.getHeader("set-cookie");
+  const count = Array.isArray(setCookie) ? setCookie.length : setCookie ? 1 : 0;
+  console.log(`[AuthDebug] ${label}: set-cookie count=${count}`, {
+    secure: cookieOptions.secure,
+    sameSite: cookieOptions.sameSite,
+    domain: "domain" in cookieOptions ? cookieOptions.domain : undefined,
+    path: cookieOptions.path,
+  });
 };
 
 
@@ -69,11 +85,13 @@ export const setTokensInCookies = (
 ) => {
   res.cookie("token", accessToken, cookieOptions);
   res.cookie("refreshToken", refreshToken, cookieOptions);
+  logCookieSet(res, "setTokensInCookies");
 };
 
 export const clearTokens = (res: Response) => {
   res.clearCookie("token", cookieOptions);
   res.clearCookie("refreshToken", cookieOptions);
+  logCookieSet(res, "clearTokens");
 };
 
 export const setAdminTokensInCookies = (
@@ -83,9 +101,11 @@ export const setAdminTokensInCookies = (
 ) => {
   res.cookie("adminToken", accessToken, cookieOptions);
   res.cookie("adminRefreshToken", refreshToken, cookieOptions);
+  logCookieSet(res, "setAdminTokensInCookies");
 };
 
 export const clearAdminTokens = (res: Response) => {
   res.clearCookie("adminToken", cookieOptions);
   res.clearCookie("adminRefreshToken", cookieOptions);
+  logCookieSet(res, "clearAdminTokens");
 };

@@ -6,6 +6,8 @@ import { verifyAccessToken } from "../lib/jwtToken";
 import { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
 import { TokenPayload } from "../types/authTypes";
 
+const AUTH_DEBUG = process.env.AUTH_DEBUG === "true";
+
 export const authenticateToken = (
   req: Request,
   res: Response,
@@ -14,34 +16,53 @@ export const authenticateToken = (
   const accessToken = req.cookies?.token;
   
   if (!accessToken) {
-    console.log("[Middleware] No access token found");
+    if (AUTH_DEBUG) {
+      console.log("[AuthDebug] middleware:noAccessToken", {
+        path: req.path,
+        cookieNames: Object.keys(req.cookies || {}),
+      });
+    }
     return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
   }
 
   try {
     const decoded = verifyAccessToken(accessToken) as TokenPayload;
-    console.log("decoded",decoded)
+    if (AUTH_DEBUG) {
+      console.log("[AuthDebug] middleware:tokenDecoded", {
+        hasId: Boolean(decoded?.id),
+        role: decoded?.role,
+      });
+    }
     const role = decoded?.role === "owner" ? "center_owner" : decoded?.role;
     if (decoded?.id && ["center_owner", "teacher", "super_admin"].includes(role)) {
-      console.log("[Middleware] Access token valid for user:", decoded.id);
+      if (AUTH_DEBUG) {
+        console.log("[AuthDebug] middleware:authorized", {
+          userId: decoded.id,
+          role,
+        });
+      }
       (req as any).user = { ...decoded, role };
       return next();
     }
 
-    console.log("[Middleware] Token valid but access denied for role:", decoded?.role);
+    if (AUTH_DEBUG) {
+      console.log("[AuthDebug] middleware:forbiddenRole", {
+        role: decoded?.role,
+      });
+    }
     return sendResponse(res, StatusCode.FORBIDDEN, MESSAGES.COMMON.ACCESS_DENIED, false);
   } catch (error) {
     if (error instanceof TokenExpiredError) {
-      console.log("[Middleware] Access token expired - returning 401");
+      if (AUTH_DEBUG) console.log("[AuthDebug] middleware:tokenExpired");
       return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.INVALID_TOKEN, false);
     }
 
     if (error instanceof JsonWebTokenError) {
-      console.log("[Middleware] Invalid access token");
+      if (AUTH_DEBUG) console.log("[AuthDebug] middleware:invalidToken");
       return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.INVALID_TOKEN, false);
     }
 
-    console.error("[Middleware] Unexpected error:", error);
+    if (AUTH_DEBUG) console.error("[AuthDebug] middleware:unexpectedError", error);
     return sendResponse(res, StatusCode.INTERNAL_SERVER_ERROR, MESSAGES.COMMON.SERVER_ERROR, false);
   }
 };

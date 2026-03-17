@@ -13,6 +13,20 @@ import {
 import { validateBodyFields } from "../utils/validateRequest";
 import { clearTokens, decodeToken, refreshAccessToken, setTokensInCookies } from "../lib/jwtToken";
 
+const AUTH_DEBUG = process.env.AUTH_DEBUG === "true";
+
+const logAuthDebug = (label: string, req: Request) => {
+  if (!AUTH_DEBUG) return;
+  console.log(`[AuthDebug] ${label}`, {
+    method: req.method,
+    path: req.path,
+    origin: req.headers.origin,
+    host: req.headers.host,
+    referer: req.headers.referer,
+    cookieNames: Object.keys(req.cookies || {}),
+  });
+};
+
 @injectable()
 export class AuthController implements IAuthController {
   constructor(
@@ -21,6 +35,7 @@ export class AuthController implements IAuthController {
 
   async login(req: Request, res: Response): Promise<void> {
     try {
+      logAuthDebug("login:request", req);
       const { email, username, password } = req.body ?? {};
       if (!password || (!email && !username)) {
         throwError(MESSAGES.COMMON.MISSING_FIELDS, StatusCode.BAD_REQUEST);
@@ -29,6 +44,12 @@ export class AuthController implements IAuthController {
       const identifier = (email ?? username) as string;
       const result = await this._authServices.login(identifier, password);
       setTokensInCookies(res,result.tocken,result.refreshToken)
+      if (AUTH_DEBUG) {
+        console.log("[AuthDebug] login:tokensSet", {
+          hasAccessToken: Boolean(result?.tocken),
+          hasRefreshToken: Boolean(result?.refreshToken),
+        });
+      }
       sendResponse(
         res,
         StatusCode.OK,
@@ -104,6 +125,7 @@ export class AuthController implements IAuthController {
 
   async getCurrentUser(req: Request, res: Response): Promise<void> {
     try {
+      logAuthDebug("me:request", req);
       const accessToken = req.cookies.token;
       const decoded = decodeToken(accessToken);
       if (!decoded) throwError(MESSAGES.AUTH.AUTH_REQUIRED, StatusCode.UNAUTHORIZED);
@@ -119,6 +141,7 @@ export class AuthController implements IAuthController {
 
   async logout(req: Request, res: Response): Promise<void> {
     try {
+      logAuthDebug("logout:request", req);
       clearTokens(res);
       sendResponse(res, StatusCode.OK, MESSAGES.AUTH.LOGOUT_SUCCESS, true);
     } catch (error) {
@@ -128,38 +151,45 @@ export class AuthController implements IAuthController {
 
   async refeshToken(req: Request, res: Response): Promise<void> {
     try {
-      console.log("[Controller] Refresh token endpoint hit");
+      logAuthDebug("refresh:request", req);
       const refreshToken = req.cookies.refreshToken;
       
       if (!refreshToken) {
-        console.log("[Controller] No refresh token in cookies");
+        if (AUTH_DEBUG) console.log("[AuthDebug] refresh:noRefreshCookie");
         throwError("Refresh token not found", StatusCode.UNAUTHORIZED);
       }
 
-      console.log("[Controller] Verifying refresh token and generating new tokens");
+      if (AUTH_DEBUG) console.log("[AuthDebug] refresh:verify");
       const tokens = refreshAccessToken(refreshToken);
       
       if (!tokens) {
-        console.log("[Controller] Refresh token invalid or expired");
+        if (AUTH_DEBUG) console.log("[AuthDebug] refresh:invalid");
         throwError(MESSAGES.AUTH.INVALID_TOKEN, StatusCode.UNAUTHORIZED);
       }
 
-      console.log("[Controller] Setting new tokens in cookies");
+      if (AUTH_DEBUG) console.log("[AuthDebug] refresh:setCookies");
       setTokensInCookies(res, tokens.accessToken, tokens.refreshToken);
       sendResponse(res, StatusCode.OK, "Token refreshed successfully", true);
     } catch (error) {
-      console.error("[Controller] Refresh token error:", error);
+      if (AUTH_DEBUG) console.error("[AuthDebug] refresh:error", error);
       handleControllerError(res, error, StatusCode.UNAUTHORIZED);
     }
   }
 
   async googleAuth(req: Request, res: Response): Promise<void> {
     try {
+      logAuthDebug("google:request", req);
       validateBodyFields(req, ["googleToken"]);
       const { googleToken } = req.body;
 
       const result = await this._authServices.googleAuth(googleToken);
       setTokensInCookies(res, result.tocken, result.refreshToken);
+      if (AUTH_DEBUG) {
+        console.log("[AuthDebug] google:tokensSet", {
+          hasAccessToken: Boolean(result?.tocken),
+          hasRefreshToken: Boolean(result?.refreshToken),
+        });
+      }
       
       sendResponse(
         res,
