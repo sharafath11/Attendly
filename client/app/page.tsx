@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Users, GraduationCap, CalendarCheck, Wallet, TrendingUp, Shield, Globe2 } from "lucide-react";
 import { Button } from "@/components/button";
@@ -71,8 +72,21 @@ export default function Home() {
       <header className="border-b border-border bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 lg:px-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold">
-              AT
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background">
+              <Image
+                src="/images/logo-light-v2.png"
+                alt="Attendly logo"
+                width={26}
+                height={26}
+                className="block dark:hidden"
+              />
+              <Image
+                src="/images/logo-dark-v2.png"
+                alt="Attendly logo"
+                width={26}
+                height={26}
+                className="hidden dark:block"
+              />
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-semibold tracking-tight">Attendly</span>

@@ -12,6 +12,14 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
   title: "Attendly | Tuition Management",
   description: "Modern SaaS dashboard for tuition teachers.",
+  icons: {
+    icon: [
+      { url: "/images/logo-light-v2.png", media: "(prefers-color-scheme: light)" },
+      { url: "/images/logo-dark-v2.png", media: "(prefers-color-scheme: dark)" },
+    ],
+    shortcut: "/images/logo-light-v2.png",
+    apple: "/images/logo-light-v2.png",
+  },
 };
 
 export default function RootLayout({

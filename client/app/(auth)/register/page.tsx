@@ -193,10 +193,10 @@ export default function RegisterPage() {
         </Button>
 
         <Divider text="or" />
-
+{/* 
         <Button type="button" variant="secondary" className="w-full" onClick={handleGoogleSignIn} isLoading={isGoogleLoading}>
           Continue with Google
-        </Button>
+        </Button> */}
 
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}

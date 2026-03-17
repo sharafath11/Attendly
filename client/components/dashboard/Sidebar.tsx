@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import gsap from "gsap";
+import Image from "next/image";
 import {
   LayoutDashboard,
   Users,
@@ -11,7 +12,6 @@ import {
   WalletCards,
   Settings,
   LogOut,
-  BookOpenCheck,
   Layers,
   HandCoins,
 } from "lucide-react";
@@ -104,8 +104,21 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
       >
         <div className="flex items-center justify-between px-4 py-5">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <BookOpenCheck className="h-5 w-5" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background">
+              <Image
+                src="/images/logo-light-v2.png"
+                alt="Attendly logo"
+                width={30}
+                height={30}
+                className="block dark:hidden"
+              />
+              <Image
+                src="/images/logo-dark-v2.png"
+                alt="Attendly logo"
+                width={30}
+                height={30}
+                className="hidden dark:block"
+              />
             </div>
             {!collapsed && (
               <div>
