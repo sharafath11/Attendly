@@ -12,7 +12,8 @@ import { userAuthMethods } from "@/services/methods/userMethods";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const router = useRouter();
   const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null);
   const [subscriptionStartDate, setSubscriptionStartDate] = useState<string | null>(null);
@@ -64,6 +65,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(media.matches);
+    update();
+    media.addEventListener?.("change", update);
+    return () => media.removeEventListener?.("change", update);
+  }, []);
+
   const warningDays = useMemo(() => {
     if (!subscriptionEndDate) return null;
     const end = new Date(subscriptionEndDate);
@@ -76,6 +85,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const showExpiryWarning =
     subscriptionStatus === "active" && warningDays !== null && warningDays >= 0 && warningDays <= 5;
+
+  const sidebarWidth = isDesktop ? (collapsed ? 86 : 260) : 280;
 
   return (
     <SubscriptionProvider
@@ -94,12 +105,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Sidebar
             collapsed={collapsed}
             onToggle={() => setCollapsed((prev) => !prev)}
-            mobileOpen={mobileOpen}
-            onMobileClose={() => setMobileOpen(false)}
+            mobileOpen={sidebarOpen}
+            onMobileClose={() => setSidebarOpen(false)}
             role={role}
           />
-          <div className="flex min-h-screen flex-1 flex-col">
-            <Navbar onMenuClick={() => setMobileOpen(true)} role={role} />
+          <div
+            className="flex min-h-screen flex-1 flex-col transition-[margin] duration-300"
+            style={{ marginLeft: sidebarOpen ? sidebarWidth : 0 }}
+          >
+            <Navbar onMenuClick={() => setSidebarOpen((prev) => !prev)} role={role} />
             {subscriptionStatus === "pending_payment" && (
               <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
                 Your subscription payment is pending. System features are temporarily disabled.

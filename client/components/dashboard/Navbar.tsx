@@ -37,7 +37,7 @@ export default function Navbar({ onMenuClick, role }: NavbarProps) {
       <div className="flex items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="inline-flex items-center justify-center rounded-md border border-border p-2 text-muted-foreground hover:bg-secondary lg:hidden"
+          className="inline-flex items-center justify-center rounded-md border border-border p-2 text-muted-foreground hover:bg-secondary"
           aria-label="Open sidebar"
         >
           <Menu className="h-4 w-4" />

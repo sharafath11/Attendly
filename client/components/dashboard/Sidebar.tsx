@@ -71,11 +71,6 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
 
   useEffect(() => {
     if (!sidebarRef.current) return;
-    if (isDesktop) {
-      gsap.set(sidebarRef.current, { x: 0 });
-      gsap.set(overlayRef.current, { autoAlpha: 0 });
-      return;
-    }
     if (mobileOpen) {
       gsap.to(sidebarRef.current, { x: 0, duration: 0.3, ease: "power2.out" });
       gsap.to(overlayRef.current, { autoAlpha: 1, duration: 0.2 });
@@ -83,7 +78,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
       gsap.to(sidebarRef.current, { x: -320, duration: 0.25, ease: "power2.out" });
       gsap.to(overlayRef.current, { autoAlpha: 0, duration: 0.2 });
     }
-  }, [mobileOpen, isDesktop]);
+  }, [mobileOpen]);
 
   const items = useMemo(() => {
     const effectiveRole = role ?? "teacher";
@@ -96,13 +91,13 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
         ref={overlayRef}
         onClick={onMobileClose}
         aria-label="Close sidebar"
-        className="fixed inset-0 z-40 bg-black/40 opacity-0 pointer-events-auto lg:hidden"
+        className="fixed inset-0 z-40 bg-black/40 opacity-0 pointer-events-auto"
         style={{ visibility: mobileOpen ? "visible" : "hidden" }}
       />
       <aside
         ref={sidebarRef}
         className={cn(
-          "fixed left-0 top-0 z-50 h-screen -translate-x-full border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm transition-transform lg:static lg:translate-x-0",
+          "fixed left-0 top-0 z-50 h-screen -translate-x-full border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm transition-transform",
           "flex flex-col",
         )}
         style={{ width }}
