@@ -123,6 +123,15 @@ export default function Home() {
             >
               Demo / Pricing
             </Link>
+            <Link
+              href="/login"
+              className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              Login
+            </Link>
+            <Link href="/register-center">
+              <Button size="sm">Register Center</Button>
+            </Link>
           </div>
         </div>
       </header>

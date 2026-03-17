@@ -47,7 +47,9 @@ export class AdminRepository
     }
   }
 
-  async getCenterOwner(centerId: string): Promise<{ id: string; name: string; email: string; isVerified: boolean } | null> {
+  async getCenterOwner(
+    centerId: string
+  ): Promise<{ id: string; name: string; email: string; isVerified: boolean; status: "active" | "pending" | "disabled" } | null> {
     try {
       const owner = await UserModel.findById(centerId).lean().exec();
       if (!owner) {
@@ -58,6 +60,7 @@ export class AdminRepository
         name: owner.username,
         email: owner.email,
         isVerified: owner.isVerified ?? false,
+        status: (owner.status as "active" | "pending" | "disabled") ?? "pending",
       };
     } catch (error) {
       throw this.handleError(error, MESSAGES.REPOSITORY.FIND_ONE_ERROR);

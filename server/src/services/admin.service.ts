@@ -3,7 +3,13 @@ import { IAdminService } from "../core/interfaces/services/IAdminService";
 import { ICenterRepository } from "../core/interfaces/repository/ICenterRepository";
 import { IAdminRepository } from "../core/interfaces/repository/IAdminRepository";
 import { TYPES } from "../core/types";
-import { AdminDashboardChartsDTO, AdminDashboardDTO, BlockCenterDTO, UpdatePaymentStatusDTO } from "../dtos/admin/admin.dto";
+import {
+  AdminDashboardChartsDTO,
+  AdminDashboardDTO,
+  BlockCenterDTO,
+  UpdatePaymentStatusDTO,
+  UpdateUserStatusDTO,
+} from "../dtos/admin/admin.dto";
 import { CenterResponseDTO } from "../dtos/centers/centers.dto";
 import { CenterModel, ICenter } from "../models/center.model";
 import { UserModel } from "../models/user.Model";
@@ -271,6 +277,8 @@ export class AdminService implements IAdminService {
       throwError(MESSAGES.COMMON.SERVER_ERROR, StatusCode.INTERNAL_SERVER_ERROR);
     }
 
+    await UserModel.findByIdAndUpdate(centerId, { status: "active" }).lean().exec();
+
     return this.mapCenter(updated);
   }
 
@@ -307,6 +315,8 @@ export class AdminService implements IAdminService {
     if (!updated) {
       throwError(MESSAGES.COMMON.SERVER_ERROR, StatusCode.INTERNAL_SERVER_ERROR);
     }
+
+    await UserModel.findByIdAndUpdate(centerId, { status: "active" }).lean().exec();
 
     return this.mapCenter(updated);
   }
@@ -355,5 +365,21 @@ export class AdminService implements IAdminService {
     }
 
     return { id: updated._id.toString(), isVerified: updated.isVerified ?? false };
+  }
+
+  async updateUserStatus(userId: string, payload: UpdateUserStatusDTO): Promise<{ id: string; status: string }> {
+    const updated = await UserModel.findByIdAndUpdate(
+      userId,
+      { status: payload.status },
+      { new: true }
+    )
+      .lean()
+      .exec();
+
+    if (!updated) {
+      throwError("User not found", StatusCode.NOT_FOUND);
+    }
+
+    return { id: updated._id.toString(), status: updated.status ?? "pending" };
   }
 }

@@ -16,7 +16,7 @@ export default function SettingsPage() {
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <h2 className="text-lg font-semibold text-foreground">Profile Info</h2>
           <div className="mt-4 grid gap-4">
-            <FormInput label="Full Name" placeholder="Sharafath Abi" />
+            <FormInput label="Full Name" placeholder="Attendly" />
             <FormInput label="Email" placeholder="teacher@attendly.com" type="email" />
             <FormInput label="Phone" placeholder="+91" />
           </div>

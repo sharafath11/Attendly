@@ -1,4 +1,10 @@
-import { AdminDashboardChartsDTO, AdminDashboardDTO, BlockCenterDTO, UpdatePaymentStatusDTO } from "../../../dtos/admin/admin.dto";
+import {
+  AdminDashboardChartsDTO,
+  AdminDashboardDTO,
+  BlockCenterDTO,
+  UpdatePaymentStatusDTO,
+  UpdateUserStatusDTO,
+} from "../../../dtos/admin/admin.dto";
 import { CenterResponseDTO } from "../../../dtos/centers/centers.dto";
 
 export interface IAdminService {
@@ -15,4 +21,5 @@ export interface IAdminService {
   rejectSubscriptionPayment(centerId: string): Promise<CenterResponseDTO>;
   verifyUser(userId: string): Promise<{ id: string; isVerified: boolean }>;
   unverifyUser(userId: string): Promise<{ id: string; isVerified: boolean }>;
+  updateUserStatus(userId: string, payload: UpdateUserStatusDTO): Promise<{ id: string; status: string }>;
 }

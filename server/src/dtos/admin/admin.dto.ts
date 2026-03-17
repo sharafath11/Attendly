@@ -12,6 +12,10 @@ export interface UpdatePaymentStatusDTO {
   subscriptionEndDate?: string;
 }
 
+export interface UpdateUserStatusDTO {
+  status: "active" | "pending" | "disabled";
+}
+
 export interface AdminDashboardDTO {
   totalCenters: number;
   activeCenters: number;

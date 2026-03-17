@@ -8,6 +8,7 @@ import {
   ApiResponse,
   BlockCenterPayload,
   UpdatePaymentStatusPayload,
+  UpdateUserStatusPayload,
 } from "@/types/admin/adminTypes";
 
 export const useAdminDashboard = () => {
@@ -114,6 +115,18 @@ export const useUnverifyUser = () => {
   return useMutation({
     mutationFn: (id: string) => adminService.unverifyUser(id),
     onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "centers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "centers", id] });
+    },
+  });
+};
+
+export const useUpdateUserStatus = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateUserStatusPayload }) =>
+      adminService.updateUserStatus(id, payload),
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "centers"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "centers", id] });
     },

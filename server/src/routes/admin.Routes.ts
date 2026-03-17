@@ -44,5 +44,6 @@ router.post(
   requireAdminRole(["super_admin"]),
   adminController.unverifyUser.bind(adminController)
 );
+router.post("/users/:id/status", requireAdminRole(["super_admin"]), adminController.updateUserStatus.bind(adminController));
 
 export default router;

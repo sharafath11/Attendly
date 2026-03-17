@@ -20,6 +20,7 @@ export type CenterOwner = {
   name: string;
   email: string;
   isVerified: boolean;
+  status: "active" | "pending" | "disabled";
 };
 
 export type AdminCenter = {
@@ -61,6 +62,10 @@ export type UpdatePaymentStatusPayload = {
   lastPaymentDate?: string;
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;
+};
+
+export type UpdateUserStatusPayload = {
+  status: "active" | "pending" | "disabled";
 };
 
 export type ApiResponse<T> = {

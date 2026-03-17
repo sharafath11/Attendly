@@ -5,7 +5,13 @@ import { IAdminService } from "../core/interfaces/services/IAdminService";
 import { TYPES } from "../core/types";
 import { handleControllerError, sendResponse } from "../utils/response";
 import { StatusCode } from "../enums/statusCode";
-import { validateBlockCenter, validateCenterIdParam, validateUpdatePaymentStatus, validateUserIdParam } from "../validator/admin.validator";
+import {
+  validateBlockCenter,
+  validateCenterIdParam,
+  validateUpdatePaymentStatus,
+  validateUpdateUserStatus,
+  validateUserIdParam,
+} from "../validator/admin.validator";
 import { getStringParam } from "../utils/http";
 
 @injectable()
@@ -148,6 +154,18 @@ export class AdminController implements IAdminController {
       validateUserIdParam(userId);
       const result = await this._adminService.unverifyUser(userId as string);
       sendResponse(res, StatusCode.OK, "User unverified", true, result);
+    } catch (error) {
+      handleControllerError(res, error);
+    }
+  }
+
+  async updateUserStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = getStringParam(req.params.id);
+      validateUserIdParam(userId);
+      validateUpdateUserStatus(req.body);
+      const result = await this._adminService.updateUserStatus(userId as string, req.body);
+      sendResponse(res, StatusCode.OK, "User status updated", true, result);
     } catch (error) {
       handleControllerError(res, error);
     }

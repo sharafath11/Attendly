@@ -14,4 +14,5 @@ export interface IAdminController {
   rejectSubscriptionPayment(req: Request, res: Response): Promise<void>;
   verifyUser(req: Request, res: Response): Promise<void>;
   unverifyUser(req: Request, res: Response): Promise<void>;
+  updateUserStatus(req: Request, res: Response): Promise<void>;
 }

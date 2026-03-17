@@ -8,6 +8,11 @@ import { CenterRegistrationDTO } from "../dtos/centers/centerRegistration.dto";
 import { throwError } from "../utils/response";
 import { StatusCode } from "../enums/statusCode";
 import { UserModel } from "../models/user.Model";
+import { redis } from "../utils/redis";
+import { generateOtp, OTP_TTL_SECONDS, storeOtp, verifyOtp } from "../utils/otp.util";
+import { sendEmailOtp } from "../utils/mail.util";
+
+const CENTER_REGISTRATION_TTL_SECONDS = 10 * 60;
 
 @injectable()
 export class CenterService implements ICenterService {
@@ -23,17 +28,19 @@ export class CenterService implements ICenterService {
     return { teacherLimit: 10, studentLimit: 400, monthlyFee: 299, planName: "Pro Plan" };
   }
 
-  async registerCenter(payload: CenterRegistrationDTO): Promise<void> {
-    const existingUser = await UserModel.findOne({ email: payload.email }).lean().exec();
+  private async ensureEmailAvailable(email: string): Promise<void> {
+    const existingUser = await UserModel.findOne({ email }).lean().exec();
     if (existingUser) {
       throwError("Email already registered", StatusCode.BAD_REQUEST);
     }
 
-    const existingCenter = await this._centerRepository.findOne({ email: payload.email });
+    const existingCenter = await this._centerRepository.findOne({ email });
     if (existingCenter) {
       throwError("Center email already registered", StatusCode.BAD_REQUEST);
     }
+  }
 
+  private async createCenterFromRegistration(payload: CenterRegistrationDTO & { hashedPassword: string }): Promise<void> {
     if (!["basic", "pro"].includes(payload.planType)) {
       throwError("Invalid planType", StatusCode.BAD_REQUEST);
     }
@@ -58,18 +65,72 @@ export class CenterService implements ICenterService {
       blocked: false,
     });
 
-    const hashedPassword = await bcrypt.hash(payload.password, 10);
     await UserModel.create({
       _id: centerId as any,
       username: payload.ownerName,
       email: payload.email,
       phone: payload.phone,
-      password: hashedPassword,
+      password: payload.hashedPassword,
       role: "center_owner",
       centerId: centerId.toString(),
       status: "pending",
       isVerified: true,
     });
+  }
+
+  async registerCenter(payload: CenterRegistrationDTO): Promise<void> {
+    await this.requestCenterRegistrationOtp(payload);
+  }
+
+  async requestCenterRegistrationOtp(payload: CenterRegistrationDTO): Promise<void> {
+    await this.ensureEmailAvailable(payload.email);
+
+    if (!["basic", "pro"].includes(payload.planType)) {
+      throwError("Invalid planType", StatusCode.BAD_REQUEST);
+    }
+
+    const hashedPassword = await bcrypt.hash(payload.password, 10);
+    const registrationKey = `center:register:${payload.email}`;
+    await redis.set(
+      registrationKey,
+      JSON.stringify({ ...payload, hashedPassword }),
+      "EX",
+      CENTER_REGISTRATION_TTL_SECONDS
+    );
+
+    const otp = generateOtp();
+    await storeOtp("register", payload.email, otp);
+    await sendEmailOtp(payload.email, otp);
+  }
+
+  async verifyCenterRegistrationOtp(email: string, otp: string): Promise<void> {
+    const isValid = await verifyOtp("register", email, otp);
+    if (!isValid) {
+      throwError("Invalid or expired OTP", StatusCode.BAD_REQUEST);
+    }
+
+    const registrationKey = `center:register:${email}`;
+    const stored = await redis.get(registrationKey);
+    if (!stored) {
+      throwError("Registration session expired. Please register again.", StatusCode.BAD_REQUEST);
+    }
+
+    await this.ensureEmailAvailable(email);
+
+    const payload = JSON.parse(stored) as CenterRegistrationDTO & { hashedPassword: string };
+    await this.createCenterFromRegistration(payload);
+    await redis.del(registrationKey);
+  }
+
+  async resendCenterRegistrationOtp(email: string): Promise<void> {
+    const registrationKey = `center:register:${email}`;
+    const stored = await redis.get(registrationKey);
+    if (!stored) {
+      throwError("Registration session expired. Please register again.", StatusCode.BAD_REQUEST);
+    }
+    const otp = generateOtp();
+    await storeOtp("register", email, otp);
+    await sendEmailOtp(email, otp);
   }
 
   async getCenterStatus(centerId: string): Promise<{ subscriptionStatus: string }> {

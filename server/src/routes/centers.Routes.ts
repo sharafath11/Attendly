@@ -9,6 +9,9 @@ const router = express.Router();
 const centerController = container.resolve<ICenterController>(TYPES.ICenterController);
 
 router.post("/register", centerController.registerCenter.bind(centerController));
+router.post("/register/request-otp", centerController.requestCenterRegistrationOtp.bind(centerController));
+router.post("/register/verify-otp", centerController.verifyCenterRegistrationOtp.bind(centerController));
+router.post("/register/resend-otp", centerController.resendCenterRegistrationOtp.bind(centerController));
 router.get(
   "/status",
   requireRole(["center_owner", "teacher"]),

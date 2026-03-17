@@ -10,6 +10,7 @@ import { useBatch } from "@/hooks/useBatches";
 import { useStudents } from "@/hooks/useStudents";
 import { useAttendanceByDate, useSaveAttendance } from "@/hooks/useAttendance";
 import { useSubscription } from "@/components/dashboard/SubscriptionContext";
+import { useTeachers } from "@/hooks/useTeachers";
 
 const getTodayDate = () => new Date().toISOString().split("T")[0];
 
@@ -22,6 +23,16 @@ export default function BatchAttendancePage() {
 
   const { data: batchData } = useBatch(batchId);
   const batch = batchData?.data;
+  const { data: teachersData } = useTeachers();
+  const teachers = teachersData?.data ?? [];
+  const teacherName = useMemo(() => {
+    if (!batch?.teacherId) return "Unassigned";
+    return (
+      teachers.find((teacher) => teacher.id === batch.teacherId)?.name ||
+      teachers.find((teacher) => teacher.id === batch.teacherId)?.username ||
+      "Unknown"
+    );
+  }, [batch?.teacherId, teachers]);
 
   const studentsQuery = useMemo(
     () => ({
@@ -94,7 +105,9 @@ export default function BatchAttendancePage() {
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Mark Attendance</h1>
           <p className="text-sm text-muted-foreground">
-            {batch?.batchName ? `${batch.batchName} • ${batch.session} • ${batch.classLevel}` : "Batch attendance"}
+            {batch?.batchName
+              ? `${batch.batchName} • ${batch.session} • ${batch.classLevel} • Teacher: ${teacherName}`
+              : "Batch attendance"}
           </p>
         </div>
         <div className="flex items-center gap-3">

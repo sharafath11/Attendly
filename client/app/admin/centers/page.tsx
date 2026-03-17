@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import ConfirmModal from "@/components/admin/ConfirmModal";
 import {
   useAdminCenters,
@@ -10,13 +10,18 @@ import {
   useUnblockCenter,
   useUpdatePaymentStatus,
   useVerifyCenter,
+  useUpdateUserStatus,
+  useVerifyUser,
+  useUnverifyUser,
 } from "@/hooks/useAdmin";
 import { AdminCenter } from "@/types/admin/adminTypes";
 
 export default function AdminCentersPage() {
   const { data: centersRes } = useAdminCenters();
   const centers = (centersRes?.data ?? []) as AdminCenter[];
+  const router = useRouter();
   const [query, setQuery] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("all");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTitle, setConfirmTitle] = useState("");
   const [confirmMessage, setConfirmMessage] = useState("");
@@ -33,6 +38,9 @@ export default function AdminCentersPage() {
   const updatePaymentStatus = useUpdatePaymentStatus();
   const verifyCenter = useVerifyCenter();
   const rejectCenter = useRejectCenter();
+  const updateUserStatus = useUpdateUserStatus();
+  const verifyUser = useVerifyUser();
+  const unverifyUser = useUnverifyUser();
 
   const openConfirm = (config: {
     title: string;
@@ -84,16 +92,40 @@ export default function AdminCentersPage() {
     };
   }, [centers]);
 
+  const owners = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; email: string; status: string; isVerified: boolean; centers: number }>();
+    centers.forEach((center) => {
+      if (!center.owner) return;
+      const existing = map.get(center.owner.id);
+      if (existing) {
+        existing.centers += 1;
+        return;
+      }
+      map.set(center.owner.id, {
+        id: center.owner.id,
+        name: center.owner.name,
+        email: center.owner.email,
+        status: center.owner.status ?? "pending",
+        isVerified: center.owner.isVerified,
+        centers: 1,
+      });
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [centers]);
+
   const filteredCenters = useMemo(() => {
-    if (!query.trim()) return centers;
-    const needle = query.toLowerCase();
-    return centers.filter(
-      (center) =>
-        center.name.toLowerCase().includes(needle) ||
-        center.email.toLowerCase().includes(needle) ||
-        (center.owner?.name?.toLowerCase().includes(needle) ?? false)
-    );
-  }, [centers, query]);
+    const needle = query.trim().toLowerCase();
+    return centers.filter((center) => {
+      const matchesOwner =
+        ownerFilter === "all" ? true : center.owner?.id === ownerFilter;
+      const matchesQuery = !needle
+        ? true
+        : center.name.toLowerCase().includes(needle) ||
+          center.email.toLowerCase().includes(needle) ||
+          (center.owner?.name?.toLowerCase().includes(needle) ?? false);
+      return matchesOwner && matchesQuery;
+    });
+  }, [centers, query, ownerFilter]);
 
   const handleBlock = async (centerId: string) => {
     openConfirm({
@@ -158,6 +190,55 @@ export default function AdminCentersPage() {
     });
   };
 
+  const handleOwnerStatus = async (ownerId: string, status: "active" | "pending" | "disabled") => {
+    openConfirm({
+      title: "Update Owner Status",
+      message: `Set owner status to "${status}"?`,
+      label: "Update",
+      tone: status === "disabled" ? "danger" : "warning",
+      onConfirm: async () => {
+        await updateUserStatus.mutateAsync({ id: ownerId, payload: { status } });
+      },
+    });
+  };
+
+  const handleOwnerVerify = async (ownerId: string, nextVerified: boolean) => {
+    openConfirm({
+      title: nextVerified ? "Verify Owner" : "Unverify Owner",
+      message: nextVerified
+        ? "This will mark the owner as verified."
+        : "This will mark the owner as unverified.",
+      label: nextVerified ? "Verify" : "Unverify",
+      tone: nextVerified ? "default" : "warning",
+      onConfirm: async () => {
+        if (nextVerified) {
+          await verifyUser.mutateAsync(ownerId);
+        } else {
+          await unverifyUser.mutateAsync(ownerId);
+        }
+      },
+    });
+  };
+
+  const handleCenterAction = (center: AdminCenter, action: string) => {
+    if (!action) return;
+    if (action === "view") {
+      router.push(`/admin/centers/${center.id}`);
+      return;
+    }
+    if (action === "approve") return void handleApprove(center.id);
+    if (action === "reject") return void handleReject(center.id);
+    if (action === "block") return void handleBlock(center.id);
+    if (action === "unblock") return void handleUnblock(center.id);
+    if (action === "activate") return void handleStatus(center.id, "active");
+    if (action === "pending") return void handleStatus(center.id, "pending_payment");
+    if (action === "expired") return void handleStatus(center.id, "expired");
+    if (action === "owner-activate" && center.owner?.id) return void handleOwnerStatus(center.owner.id, "active");
+    if (action === "owner-disable" && center.owner?.id) return void handleOwnerStatus(center.owner.id, "disabled");
+    if (action === "owner-verify" && center.owner?.id) return void handleOwnerVerify(center.owner.id, true);
+    if (action === "owner-unverify" && center.owner?.id) return void handleOwnerVerify(center.owner.id, false);
+  };
+
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">Manage verification, subscription, and access status.</p>
@@ -183,12 +264,24 @@ export default function AdminCentersPage() {
               <p className="text-sm font-semibold">All Centers</p>
               <p className="text-xs text-muted-foreground">Search by center name, owner, or email.</p>
             </div>
-            <div className="w-full sm:w-64">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <select
+                value={ownerFilter}
+                onChange={(event) => setOwnerFilter(event.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-foreground/30 sm:w-56"
+              >
+                <option value="all">All owners</option>
+                {owners.map((owner) => (
+                  <option key={owner.id} value={owner.id}>
+                    {owner.name}
+                  </option>
+                ))}
+              </select>
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search centers..."
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-foreground/30"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-foreground/30 sm:w-64"
               />
             </div>
           </div>
@@ -228,37 +321,31 @@ export default function AdminCentersPage() {
                   </span>
                   <span className="rounded-full border border-border px-2 py-0.5">{center.status ?? "pending"}</span>
                 </div>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <Link
-                    href={`/admin/centers/${center.id}`}
-                    className="cursor-pointer rounded-md border border-border px-2 py-1 transition hover:bg-secondary"
+                <div className="text-xs">
+                  <select
+                    defaultValue=""
+                    onChange={(event) => {
+                      handleCenterAction(center, event.target.value);
+                      event.currentTarget.value = "";
+                    }}
+                    className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs"
                   >
-                    View
-                  </Link>
-                  <button
-                    onClick={() => handleApprove(center.id)}
-                    className="cursor-pointer rounded-md border border-border px-2 py-1 transition hover:bg-secondary"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => handleReject(center.id)}
-                    className="cursor-pointer rounded-md border border-border px-2 py-1 transition hover:bg-secondary"
-                  >
-                    Reject
-                  </button>
-                  <button
-                    onClick={() => handleBlock(center.id)}
-                    className="cursor-pointer rounded-md border border-destructive/30 px-2 py-1 text-destructive transition hover:bg-destructive/10"
-                  >
-                    Block
-                  </button>
-                  <button
-                    onClick={() => handleUnblock(center.id)}
-                    className="cursor-pointer rounded-md border border-border px-2 py-1 transition hover:bg-secondary"
-                  >
-                    Unblock
-                  </button>
+                    <option value="" disabled>
+                      Actions
+                    </option>
+                    <option value="view">View</option>
+                    <option value="approve">Approve Center</option>
+                    <option value="reject">Reject Center</option>
+                    <option value="block">Block Center</option>
+                    <option value="unblock">Unblock Center</option>
+                    <option value="activate">Subscription Active</option>
+                    <option value="pending">Subscription Pending</option>
+                    <option value="expired">Subscription Expired</option>
+                    <option value="owner-verify">Verify Owner</option>
+                    <option value="owner-unverify">Unverify Owner</option>
+                    <option value="owner-activate">Owner Active</option>
+                    <option value="owner-disable">Owner Disabled</option>
+                  </select>
                 </div>
               </div>
 
@@ -293,61 +380,131 @@ export default function AdminCentersPage() {
                 <div className="text-xs text-muted-foreground">
                   {center.createdAt ? new Date(center.createdAt).toLocaleDateString() : "-"}
                 </div>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <Link
-                    href={`/admin/centers/${center.id}`}
-                    className="cursor-pointer rounded-md border border-border px-2 py-1 transition hover:bg-secondary"
+                <div className="text-xs">
+                  <select
+                    defaultValue=""
+                    onChange={(event) => {
+                      handleCenterAction(center, event.target.value);
+                      event.currentTarget.value = "";
+                    }}
+                    className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs"
                   >
-                    View
-                  </Link>
-                  <button
-                    onClick={() => handleApprove(center.id)}
-                    className="cursor-pointer rounded-md border border-border px-2 py-1 transition hover:bg-secondary"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => handleReject(center.id)}
-                    className="cursor-pointer rounded-md border border-border px-2 py-1 transition hover:bg-secondary"
-                  >
-                    Reject
-                  </button>
-                  <button
-                    onClick={() => handleBlock(center.id)}
-                    className="cursor-pointer rounded-md border border-destructive/30 px-2 py-1 text-destructive transition hover:bg-destructive/10"
-                  >
-                    Block
-                  </button>
-                  <button
-                    onClick={() => handleUnblock(center.id)}
-                    className="cursor-pointer rounded-md border border-border px-2 py-1 transition hover:bg-secondary"
-                  >
-                    Unblock
-                  </button>
-                  <button
-                    onClick={() => handleStatus(center.id, "active")}
-                    className="cursor-pointer rounded-md border border-border px-2 py-1 transition hover:bg-secondary"
-                  >
-                    Activate
-                  </button>
-                  <button
-                    onClick={() => handleStatus(center.id, "pending_payment")}
-                    className="cursor-pointer rounded-md border border-border px-2 py-1 transition hover:bg-secondary"
-                  >
-                    Pending
-                  </button>
-                  <button
-                    onClick={() => handleStatus(center.id, "expired")}
-                    className="cursor-pointer rounded-md border border-border px-2 py-1 transition hover:bg-secondary"
-                  >
-                    Expired
-                  </button>
+                    <option value="" disabled>
+                      Actions
+                    </option>
+                    <option value="view">View</option>
+                    <option value="approve">Approve Center</option>
+                    <option value="reject">Reject Center</option>
+                    <option value="block">Block Center</option>
+                    <option value="unblock">Unblock Center</option>
+                    <option value="activate">Subscription Active</option>
+                    <option value="pending">Subscription Pending</option>
+                    <option value="expired">Subscription Expired</option>
+                    <option value="owner-verify">Verify Owner</option>
+                    <option value="owner-unverify">Unverify Owner</option>
+                    <option value="owner-activate">Owner Active</option>
+                    <option value="owner-disable">Owner Disabled</option>
+                  </select>
                 </div>
               </div>
             </div>
           ))}
           {filteredCenters.length === 0 && (
             <div className="px-4 py-6 text-sm text-muted-foreground">No centers found.</div>
+          )}
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <div className="border-b border-border bg-muted/30 px-4 py-3">
+          <div>
+            <p className="text-sm font-semibold">Owners</p>
+            <p className="text-xs text-muted-foreground">Owner list with status and center count.</p>
+          </div>
+        </div>
+        <div className="hidden grid-cols-5 gap-2 border-b border-border bg-muted/50 px-4 py-3 text-xs font-semibold uppercase text-muted-foreground md:grid">
+          <span>Owner</span>
+          <span>Email</span>
+          <span>Centers</span>
+          <span>Status</span>
+          <span>Actions</span>
+        </div>
+        <div className="divide-y divide-border">
+          {owners.map((owner) => (
+            <div key={owner.id} className="px-4 py-4">
+              <div className="space-y-2 md:hidden">
+                <div>
+                  <p className="text-base font-semibold">{owner.name}</p>
+                  <p className="text-xs text-muted-foreground">{owner.email}</p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <span className="rounded-full border border-border px-2 py-0.5">{owner.status}</span>
+                  <span className="rounded-full border border-border px-2 py-0.5">
+                    {owner.isVerified ? "Verified" : "Unverified"}
+                  </span>
+                  <span className="rounded-full border border-border px-2 py-0.5">
+                    Centers: {owner.centers}
+                  </span>
+                </div>
+                <select
+                  defaultValue=""
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value === "verify") handleOwnerVerify(owner.id, true);
+                    if (value === "unverify") handleOwnerVerify(owner.id, false);
+                    if (value === "active") handleOwnerStatus(owner.id, "active");
+                    if (value === "disabled") handleOwnerStatus(owner.id, "disabled");
+                    event.currentTarget.value = "";
+                  }}
+                  className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs"
+                >
+                  <option value="" disabled>
+                    Actions
+                  </option>
+                  <option value="verify">Verify Owner</option>
+                  <option value="unverify">Unverify Owner</option>
+                  <option value="active">Set Active</option>
+                  <option value="disabled">Set Disabled</option>
+                </select>
+              </div>
+
+              <div className="hidden grid-cols-5 gap-2 text-sm md:grid">
+                <div className="font-medium">{owner.name}</div>
+                <div className="text-xs text-muted-foreground">{owner.email}</div>
+                <div className="text-xs">{owner.centers}</div>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className="rounded-full border border-border px-2 py-1">{owner.status}</span>
+                  <span className="rounded-full border border-border px-2 py-1">
+                    {owner.isVerified ? "Verified" : "Unverified"}
+                  </span>
+                </div>
+                <div className="text-xs">
+                  <select
+                    defaultValue=""
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (value === "verify") handleOwnerVerify(owner.id, true);
+                      if (value === "unverify") handleOwnerVerify(owner.id, false);
+                      if (value === "active") handleOwnerStatus(owner.id, "active");
+                      if (value === "disabled") handleOwnerStatus(owner.id, "disabled");
+                      event.currentTarget.value = "";
+                    }}
+                    className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs"
+                  >
+                    <option value="" disabled>
+                      Actions
+                    </option>
+                    <option value="verify">Verify Owner</option>
+                    <option value="unverify">Unverify Owner</option>
+                    <option value="active">Set Active</option>
+                    <option value="disabled">Set Disabled</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          ))}
+          {owners.length === 0 && (
+            <div className="px-4 py-6 text-sm text-muted-foreground">No owners found.</div>
           )}
         </div>
       </div>

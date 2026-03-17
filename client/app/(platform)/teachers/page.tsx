@@ -16,6 +16,7 @@ import {
   useUpdateTeacher,
   useUpdateTeacherStatus,
 } from "@/hooks/useTeachers";
+import { useBatches } from "@/hooks/useBatches";
 import type { CreateTeacherPayload, Teacher } from "@/types/teacher/teacherTypes";
 
 type TeacherFormValues = {
@@ -44,12 +45,14 @@ const subjectOptions = [
 export default function TeachersPage() {
   const { isActive } = useSubscription();
   const { data, isLoading } = useTeachers();
+  const { data: batchesData } = useBatches();
   const createTeacher = useCreateTeacher();
   const updateTeacher = useUpdateTeacher();
   const updateStatus = useUpdateTeacherStatus();
   const resetPassword = useResetTeacherPassword();
 
   const teacherList = data?.data ?? [];
+  const batches = batchesData?.data?.batches ?? [];
 
   const [modalOpen, setModalOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
@@ -213,6 +216,17 @@ export default function TeachersPage() {
 
   const rows = useMemo(() => teacherList as Teacher[], [teacherList]);
 
+  const batchesByTeacherId = useMemo(() => {
+    const map = new Map<string, string[]>();
+    batches.forEach((batch) => {
+      if (!batch.teacherId) return;
+      const next = map.get(batch.teacherId) ?? [];
+      next.push(batch.batchName);
+      map.set(batch.teacherId, next);
+    });
+    return map;
+  }, [batches]);
+
   const availableSubjects = useMemo(() => {
     const subjects = new Set<string>();
     teacherList.forEach((teacher) => {
@@ -350,6 +364,18 @@ export default function TeachersPage() {
               key: "salary",
               header: "Salary",
               render: (row) => (row.salary ? `₹${row.salary.toLocaleString()}` : "—"),
+            },
+            {
+              key: "batches",
+              header: "Batches",
+              render: (row) => {
+                const batchNames = batchesByTeacherId.get(row.id) ?? [];
+                return (
+                  <span className="text-xs text-muted-foreground">
+                    {batchNames.length > 0 ? batchNames.join(", ") : "—"}
+                  </span>
+                );
+              },
             },
             {
               key: "status",
@@ -508,6 +534,14 @@ export default function TeachersPage() {
             <p className="text-xs uppercase tracking-wide">Salary</p>
             <p className="text-sm font-medium text-foreground">
               {selectedTeacher?.salary ? `₹${selectedTeacher.salary.toLocaleString()}` : "—"}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide">Batches</p>
+            <p className="text-sm font-medium text-foreground">
+              {(selectedTeacher?.id && (batchesByTeacherId.get(selectedTeacher.id) ?? []).length > 0)
+                ? (batchesByTeacherId.get(selectedTeacher.id) ?? []).join(", ")
+                : "—"}
             </p>
           </div>
         </div>

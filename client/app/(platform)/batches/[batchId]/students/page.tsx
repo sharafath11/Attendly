@@ -11,6 +11,7 @@ import { showErrorToast, showSuccessToast } from "@/utils/toast";
 import { useBatch } from "@/hooks/useBatches";
 import { useStudents } from "@/hooks/useStudents";
 import { useFees, useMarkFeePaid, useUpdateFeeStatus } from "@/hooks/useFees";
+import { useTeachers } from "@/hooks/useTeachers";
 import type { FeeRecord, FeeStatus, PaymentMethod } from "@/types/fees/feesTypes";
 
 const paymentMethods: PaymentMethod[] = ["Cash", "UPI", "Bank"];
@@ -28,6 +29,16 @@ export default function BatchStudentsPage() {
 
   const { data: batchData } = useBatch(batchId);
   const batch = batchData?.data;
+  const { data: teachersData } = useTeachers();
+  const teachers = teachersData?.data ?? [];
+  const teacherName = useMemo(() => {
+    if (!batch?.teacherId) return "Unassigned";
+    return (
+      teachers.find((teacher) => teacher.id === batch.teacherId)?.name ||
+      teachers.find((teacher) => teacher.id === batch.teacherId)?.username ||
+      "Unknown"
+    );
+  }, [batch?.teacherId, teachers]);
 
   const studentsQuery = useMemo(
     () => ({
@@ -117,7 +128,9 @@ export default function BatchStudentsPage() {
       <div>
         <h1 className="text-2xl font-semibold text-foreground">Batch Students</h1>
         <p className="text-sm text-muted-foreground">
-          {batch?.batchName ? `Students in ${batch.batchName}.` : "Student list for this batch."}
+          {batch?.batchName
+            ? `Students in ${batch.batchName} • Teacher: ${teacherName}.`
+            : "Student list for this batch."}
         </p>
       </div>
 

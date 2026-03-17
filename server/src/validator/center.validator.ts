@@ -23,6 +23,15 @@ export const validateCenterRegistration = (payload: CenterRegistrationDTO): void
     throwError("Password must be at least 8 characters long", StatusCode.BAD_REQUEST);
   }
 
+  const strongPasswordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+  if (!strongPasswordRegex.test(payload.password)) {
+    throwError(
+      "Password must include uppercase, lowercase, number, and special character",
+      StatusCode.BAD_REQUEST
+    );
+  }
+
   if (!/\S+@\S+\.\S+/.test(payload.email)) {
     throwError("Invalid email address", StatusCode.BAD_REQUEST);
   }

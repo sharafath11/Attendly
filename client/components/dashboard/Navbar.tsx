@@ -10,9 +10,18 @@ import { userAuthMethods } from "@/services/methods/userMethods";
 interface NavbarProps {
   onMenuClick: () => void;
   role: "center_owner" | "teacher" | null;
+  userName?: string | null;
 }
 
-export default function Navbar({ onMenuClick, role }: NavbarProps) {
+const getInitials = (name?: string | null) => {
+  if (!name) return "U";
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "U";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+};
+
+export default function Navbar({ onMenuClick, role, userName }: NavbarProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
@@ -72,9 +81,11 @@ export default function Navbar({ onMenuClick, role }: NavbarProps) {
             <DropdownMenu.Trigger asChild>
               <button className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1 text-sm">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                  SA
+                  {getInitials(userName)}
                 </span>
-                <span className="hidden text-xs font-medium text-foreground sm:inline">Sharafath</span>
+                <span className="hidden text-xs font-medium text-foreground sm:inline">
+                  {userName ?? "User"}
+                </span>
               </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>
@@ -105,9 +116,11 @@ export default function Navbar({ onMenuClick, role }: NavbarProps) {
         ) : (
           <div className="flex items-center gap-2 rounded-full border border-border bg-card px-2 py-1 text-sm">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-              SA
+              {getInitials(userName)}
             </span>
-            <span className="hidden text-xs font-medium text-foreground sm:inline">Sharafath</span>
+            <span className="hidden text-xs font-medium text-foreground sm:inline">
+              {userName ?? "User"}
+            </span>
           </div>
         )}
       </div>

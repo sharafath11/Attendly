@@ -14,6 +14,7 @@ import {
   useDeleteBatch,
   useUpdateBatch,
 } from "@/hooks/useBatches";
+import { useTeachers } from "@/hooks/useTeachers";
 import BatchCard from "@/components/batches/BatchCard";
 import type { Batch, CreateBatchPayload } from "@/types/batches/batchTypes";
 
@@ -32,6 +33,7 @@ type BatchFormValues = {
   session: string;
   scheduleTime: string;
   days: string[];
+  teacherId: string;
 };
 
 const emptyForm: BatchFormValues = {
@@ -41,6 +43,7 @@ const emptyForm: BatchFormValues = {
   session: sessionOptions[0],
   scheduleTime: "",
   days: [],
+  teacherId: "",
 };
 
 const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
@@ -50,6 +53,7 @@ export default function BatchesPage() {
   const router = useRouter();
   const [mediumFilter, setMediumFilter] = useState(filterOptions.medium[0]);
   const [sessionFilter, setSessionFilter] = useState(filterOptions.session[0]);
+  const [teacherFilter, setTeacherFilter] = useState("All Teachers");
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
@@ -69,8 +73,31 @@ export default function BatchesPage() {
   const createBatch = useCreateBatch();
   const updateBatch = useUpdateBatch();
   const deleteBatch = useDeleteBatch();
+  const { data: teachersData } = useTeachers();
 
   const batches = data?.data?.batches ?? [];
+  const teachers = teachersData?.data ?? [];
+
+  const teacherNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    teachers.forEach((teacher) => {
+      map.set(teacher.id, teacher.name || teacher.username || "Teacher");
+    });
+    return map;
+  }, [teachers]);
+
+  const displayBatches = useMemo(() => {
+    const filtered = batches.filter((batch) => {
+      if (teacherFilter === "All Teachers") return true;
+      if (teacherFilter === "Unassigned") return !batch.teacherId;
+      return batch.teacherId === teacherFilter;
+    });
+
+    return filtered.map((batch) => ({
+      ...batch,
+      teacherName: batch.teacherId ? teacherNameById.get(batch.teacherId) ?? "Unknown" : "",
+    }));
+  }, [batches, teacherFilter, teacherNameById]);
 
   const openAddModal = () => {
     setSelectedBatch(null);
@@ -89,6 +116,7 @@ export default function BatchesPage() {
       session: batch.session,
       scheduleTime: batch.scheduleTime,
       days: batch.days,
+      teacherId: batch.teacherId ?? "",
     };
     setDaysSelection(batch.days);
     setModalKey(`edit-${batch.id}`);
@@ -110,6 +138,7 @@ export default function BatchesPage() {
       session: current.session.trim(),
       scheduleTime: current.scheduleTime.trim(),
       days: current.days,
+      teacherId: current.teacherId ? current.teacherId : null,
     };
 
     if (
@@ -195,6 +224,22 @@ export default function BatchesPage() {
               ))}
             </select>
           </div>
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <select
+              value={teacherFilter}
+              onChange={(event) => setTeacherFilter(event.target.value)}
+              className="w-48 rounded-lg border border-border bg-card py-2 pl-9 pr-3 text-sm text-foreground"
+            >
+              <option value="All Teachers">All Teachers</option>
+              <option value="Unassigned">Unassigned</option>
+              {teachers.map((teacher) => (
+                <option key={teacher.id} value={teacher.id}>
+                  {teacher.name || teacher.username}
+                </option>
+              ))}
+            </select>
+          </div>
           <Button onClick={openAddModal} className="gap-2" disabled={!isActive}>
             <Plus className="h-4 w-4" /> Add Batch
           </Button>
@@ -207,7 +252,7 @@ export default function BatchesPage() {
         </div>
       ) : (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {batches.map((batch) => (
+          {displayBatches.map((batch) => (
             <BatchCard
               key={batch.id}
               batch={batch}
@@ -289,6 +334,25 @@ export default function BatchesPage() {
               formRef.current.scheduleTime = event.target.value;
             }}
           />
+          <label className="block space-y-1 text-sm text-muted-foreground">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Teacher (Optional)
+            </span>
+            <select
+              defaultValue={formRef.current.teacherId}
+              onChange={(event) => {
+                formRef.current.teacherId = event.target.value;
+              }}
+              className="w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <option value="">No teacher assigned</option>
+              {teachers.map((teacher) => (
+                <option key={teacher.id} value={teacher.id}>
+                  {teacher.name || teacher.username}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Days

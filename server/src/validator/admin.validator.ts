@@ -45,3 +45,13 @@ export const validateUpdatePaymentStatus = (payload: UpdatePaymentStatusDTO): vo
     throwError("Invalid subscriptionEndDate", StatusCode.BAD_REQUEST);
   }
 };
+
+export const validateUpdateUserStatus = (payload: { status?: string }): void => {
+  if (!payload.status) {
+    throwError(MESSAGES.COMMON.MISSING_FIELDS, StatusCode.BAD_REQUEST);
+  }
+
+  if (!["active", "pending", "disabled"].includes(payload.status)) {
+    throwError("Invalid user status", StatusCode.BAD_REQUEST);
+  }
+};

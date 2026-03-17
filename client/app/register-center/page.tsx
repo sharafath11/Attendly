@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { CalendarCheck2, Shield, WalletCards } from "lucide-react";
@@ -11,6 +11,7 @@ import { Button } from "@/components/button";
 import { Alert } from "@/components/alert";
 import { centersService } from "@/services/centers.service";
 import { showErrorToast, showSuccessToast } from "@/utils/toast";
+import { OTPInput } from "@/components/otp-input";
 
 export default function RegisterCenterPage() {
   const [formData, setFormData] = useState({
@@ -19,12 +20,29 @@ export default function RegisterCenterPage() {
     email: "",
     phone: "",
     password: "",
+    confirmPassword: "",
     address: "",
     medium: "English",
     planType: "basic",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+  const [otp, setOtp] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [step, setStep] = useState<"form" | "otp">("form");
+
+  const passwordError = useMemo(() => {
+    if (!formData.password) return "";
+    const strongPasswordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+    if (!strongPasswordRegex.test(formData.password)) {
+      return "Use 8+ chars with upper, lower, number, and special.";
+    }
+    if (formData.confirmPassword && formData.password !== formData.confirmPassword) {
+      return "Passwords do not match.";
+    }
+    return "";
+  }, [formData.password, formData.confirmPassword]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -36,8 +54,20 @@ export default function RegisterCenterPage() {
     setIsLoading(true);
     setAlertMessage("");
 
-    const res = await centersService.registerCenter({
-      ...formData,
+    if (passwordError) {
+      setAlertMessage(passwordError);
+      showErrorToast(passwordError);
+      setIsLoading(false);
+      return;
+    }
+
+    const res = await centersService.requestCenterOtp({
+      centerName: formData.centerName,
+      ownerName: formData.ownerName,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.password,
+      address: formData.address,
       medium: formData.medium as "English" | "Malayalam",
       planType: formData.planType as "basic" | "pro",
     });
@@ -51,8 +81,44 @@ export default function RegisterCenterPage() {
       return;
     }
 
+    showSuccessToast(res.msg || "OTP sent to your email.");
+    setAlertMessage(res.msg || "OTP sent to your email.");
+    setStep("otp");
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otp.length !== 6) {
+      setOtpError("Enter the 6-digit OTP.");
+      return;
+    }
+    setOtpError("");
+    setIsLoading(true);
+
+    const res = await centersService.verifyCenterOtp({ email: formData.email, otp });
+
+    setIsLoading(false);
+
+    if (!res || !res.ok) {
+      const errorMsg = res?.msg || "OTP verification failed";
+      setOtpError(errorMsg);
+      showErrorToast(errorMsg);
+      return;
+    }
+
     showSuccessToast(res.msg || "Registration successful. Waiting for admin approval.");
-    setAlertMessage("Registration successful. Waiting for admin approval.");
+    setAlertMessage(res.msg || "Registration successful. Waiting for admin approval.");
+  };
+
+  const handleResendOtp = async () => {
+    setIsLoading(true);
+    const res = await centersService.resendCenterOtp({ email: formData.email });
+    setIsLoading(false);
+    if (!res || !res.ok) {
+      const errorMsg = res?.msg || "Failed to resend OTP";
+      showErrorToast(errorMsg);
+      return;
+    }
+    showSuccessToast(res.msg || "OTP resent.");
   };
 
   return (
@@ -111,52 +177,90 @@ export default function RegisterCenterPage() {
 
         <section className="w-full lg:w-[58%]">
           <AuthCard title="Register Center" description="Create your tuition center account">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {alertMessage && <Alert type="info" message={alertMessage} onClose={() => setAlertMessage("")} />}
+            {step === "form" ? (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {alertMessage && <Alert type="info" message={alertMessage} onClose={() => setAlertMessage("")} />}
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input label="Center Name" name="centerName" value={formData.centerName} onChange={handleChange} />
-                <Input label="Owner Name" name="ownerName" value={formData.ownerName} onChange={handleChange} />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input label="Email" name="email" type="email" value={formData.email} onChange={handleChange} />
-                <Input label="Phone" name="phone" value={formData.phone} onChange={handleChange} />
-              </div>
-              <PasswordInput label="Password" name="password" value={formData.password} onChange={handleChange} />
-              <Input label="Address" name="address" value={formData.address} onChange={handleChange} />
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Medium</label>
-                  <select
-                    name="medium"
-                    value={formData.medium}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Input label="Center Name" name="centerName" value={formData.centerName} onChange={handleChange} />
+                  <Input label="Owner Name" name="ownerName" value={formData.ownerName} onChange={handleChange} />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Input label="Email" name="email" type="email" value={formData.email} onChange={handleChange} />
+                  <Input label="Phone" name="phone" value={formData.phone} onChange={handleChange} />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <PasswordInput
+                    label="Password"
+                    name="password"
+                    value={formData.password}
                     onChange={handleChange}
-                    className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
-                  >
-                    <option value="English">English</option>
-                    <option value="Malayalam">Malayalam</option>
-                  </select>
+                  />
+                  <PasswordInput
+                    label="Confirm Password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                  />
+                </div>
+                {passwordError && <p className="text-xs text-destructive">{passwordError}</p>}
+                <Input label="Address" name="address" value={formData.address} onChange={handleChange} />
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-foreground">Medium</label>
+                    <select
+                      name="medium"
+                      value={formData.medium}
+                      onChange={handleChange}
+                      className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
+                    >
+                      <option value="English">English</option>
+                      <option value="Malayalam">Malayalam</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-foreground">Plan Type</label>
+                    <select
+                      name="planType"
+                      value={formData.planType}
+                      onChange={handleChange}
+                      className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
+                    >
+                      <option value="basic">Basic – ₹199/month – 5 teachers – 150 students</option>
+                      <option value="pro">Pro – ₹299/month – 10 teachers – 400 students</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-sm font-medium text-foreground">Plan Type</label>
-                  <select
-                    name="planType"
-                    value={formData.planType}
-                    onChange={handleChange}
-                    className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm"
-                  >
-                    <option value="basic">Basic – ₹199/month – 5 teachers – 150 students</option>
-                    <option value="pro">Pro – ₹299/month – 10 teachers – 400 students</option>
-                  </select>
+                <Button type="submit" variant="primary" size="lg" className="w-full" isLoading={isLoading}>
+                  Send OTP
+                </Button>
+              </form>
+            ) : (
+              <div className="space-y-4">
+                {alertMessage && <Alert type="info" message={alertMessage} onClose={() => setAlertMessage("")} />}
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Enter the 6-digit OTP sent to{" "}
+                    <span className="font-semibold text-foreground">{formData.email}</span>.
+                  </p>
+                  <OTPInput onChange={setOtp} error={otpError} />
                 </div>
+                <Button type="button" variant="primary" size="lg" className="w-full" isLoading={isLoading} onClick={handleVerifyOtp}>
+                  Verify & Submit
+                </Button>
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  className="w-full text-sm font-medium text-primary hover:underline"
+                  disabled={isLoading}
+                >
+                  Resend OTP
+                </button>
               </div>
-
-              <Button type="submit" variant="primary" size="lg" className="w-full" isLoading={isLoading}>
-                Submit Registration
-              </Button>
-            </form>
+            )}
           </AuthCard>
         </section>
       </div>

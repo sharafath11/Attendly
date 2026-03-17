@@ -23,6 +23,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [blockedReason, setBlockedReason] = useState<string | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [role, setRole] = useState<"center_owner" | "teacher" | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -55,6 +56,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       if (!active) return;
       if (res?.ok && res.data?.role) {
         setRole(res.data.role);
+        setUserName(res.data?.name ?? null);
         return;
       }
       setRole("teacher");
@@ -113,7 +115,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             className="flex min-h-screen flex-1 flex-col transition-[margin] duration-300"
             style={{ marginLeft: sidebarOpen ? sidebarWidth : 0 }}
           >
-            <Navbar onMenuClick={() => setSidebarOpen((prev) => !prev)} role={role} />
+            <Navbar onMenuClick={() => setSidebarOpen((prev) => !prev)} role={role} userName={userName} />
             {subscriptionStatus === "pending_payment" && (
               <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
                 Your subscription payment is pending. System features are temporarily disabled.

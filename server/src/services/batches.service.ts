@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { IBatchesService } from "../core/interfaces/services/IBatchesService";
 import { IBatchesRepository } from "../core/interfaces/repository/IBatchesRepository";
 import { ICenterRepository } from "../core/interfaces/repository/ICenterRepository";
+import { ITeacherRepository } from "../core/interfaces/repository/ITeacherRepository";
 import { TYPES } from "../core/types";
 import {
   BatchFiltersDTO,
@@ -22,7 +23,9 @@ export class BatchesService implements IBatchesService {
     @inject(TYPES.IBatchesRepository)
     private _batchesRepository: IBatchesRepository,
     @inject(TYPES.ICenterRepository)
-    private _centerRepository: ICenterRepository
+    private _centerRepository: ICenterRepository,
+    @inject(TYPES.ITeacherRepository)
+    private _teacherRepository: ITeacherRepository
   ) {}
 
   private mapBatch(batch: IBatch, studentCount: number): BatchResponseDTO {
@@ -34,11 +37,23 @@ export class BatchesService implements IBatchesService {
       session: batch.session,
       scheduleTime: batch.scheduleTime,
       days: batch.days,
+      teacherId: batch.teacherId ? batch.teacherId.toString() : null,
       userId: batch.userId.toString(),
       studentCount,
       createdAt: batch.createdAt,
       updatedAt: batch.updatedAt,
     };
+  }
+
+  private async ensureTeacherInCenter(centerId: string, teacherId: string): Promise<void> {
+    const teacher = await this._teacherRepository.findById(teacherId);
+    if (!teacher) {
+      throwError("Teacher not found", StatusCode.NOT_FOUND);
+    }
+    const teacherCenter = teacher.centerId ? teacher.centerId.toString() : teacher._id.toString();
+    if (teacherCenter !== centerId || teacher.role !== "teacher") {
+      throwError("Teacher does not belong to this center", StatusCode.FORBIDDEN);
+    }
   }
 
   private async ensureActiveSubscription(centerId: string, message: string): Promise<void> {
@@ -56,6 +71,9 @@ export class BatchesService implements IBatchesService {
 
   async createBatch(centerId: string, payload: CreateBatchDTO): Promise<BatchResponseDTO> {
     await this.ensureActiveSubscription(centerId, "Subscription inactive. Batch creation disabled.");
+    if (payload.teacherId) {
+      await this.ensureTeacherInCenter(centerId, payload.teacherId);
+    }
     const created = await this._batchesRepository.create({
       batchName: payload.batchName,
       classLevel: payload.classLevel,
@@ -63,6 +81,7 @@ export class BatchesService implements IBatchesService {
       session: payload.session,
       scheduleTime: payload.scheduleTime,
       days: payload.days,
+      teacherId: payload.teacherId ? new mongoose.Types.ObjectId(payload.teacherId) : null,
       centerId: new mongoose.Types.ObjectId(centerId),
       userId: new mongoose.Types.ObjectId(centerId),
     } as Partial<IBatch>);
@@ -98,6 +117,10 @@ export class BatchesService implements IBatchesService {
       throwError("Batch not found", StatusCode.NOT_FOUND);
     }
 
+    if (payload.teacherId) {
+      await this.ensureTeacherInCenter(centerId, payload.teacherId);
+    }
+
     const updated = await this._batchesRepository.updateBatchByIdAndUser(id, centerId, {
       batchName: payload.batchName ?? existing.batchName,
       classLevel: payload.classLevel ?? existing.classLevel,
@@ -105,6 +128,12 @@ export class BatchesService implements IBatchesService {
       session: payload.session ?? existing.session,
       scheduleTime: payload.scheduleTime ?? existing.scheduleTime,
       days: payload.days ?? existing.days,
+      teacherId:
+        payload.teacherId === undefined
+          ? existing.teacherId ?? null
+          : payload.teacherId
+            ? new mongoose.Types.ObjectId(payload.teacherId)
+            : null,
     });
 
     if (!updated) {

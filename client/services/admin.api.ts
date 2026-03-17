@@ -7,6 +7,7 @@ import {
   ApiResponse,
   BlockCenterPayload,
   UpdatePaymentStatusPayload,
+  UpdateUserStatusPayload,
 } from "@/types/admin/adminTypes";
 
 export const adminApi = {
@@ -23,4 +24,6 @@ export const adminApi = {
   rejectCenter: (id: string) => postRequest<ApiResponse<any>>(`/admin/centers/${id}/reject`, {}),
   verifyUser: (id: string) => postRequest<ApiResponse<any>>(`/admin/users/${id}/verify`, {}),
   unverifyUser: (id: string) => postRequest<ApiResponse<any>>(`/admin/users/${id}/unverify`, {}),
+  updateUserStatus: (id: string, payload: UpdateUserStatusPayload) =>
+    postRequest<ApiResponse<any>>(`/admin/users/${id}/status`, payload),
 };

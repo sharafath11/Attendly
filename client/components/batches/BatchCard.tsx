@@ -48,6 +48,10 @@ export default function BatchCard({
         <p className="text-foreground">{batch.medium} Medium</p>
         <p className="text-foreground">{batch.session} Session</p>
         <p>
+          <span className="font-medium text-foreground">Teacher:</span>{" "}
+          {batch.teacherName ? batch.teacherName : "Unassigned"}
+        </p>
+        <p>
           <span className="font-medium text-foreground">Schedule:</span> {batch.scheduleTime} |{" "}
           {formatDays(batch.days)}
         </p>

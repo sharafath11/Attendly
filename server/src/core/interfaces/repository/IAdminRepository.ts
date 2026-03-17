@@ -5,7 +5,9 @@ import { AdminRepositoryData } from "../../../types/adminTypes";
 
 export interface IAdminRepository extends IBaseRepository<CenterDocument, ICenter> {
   getDashboardStats(): Promise<AdminRepositoryData>;
-  getCenterOwner(centerId: string): Promise<{ id: string; name: string; email: string; isVerified: boolean } | null>;
+  getCenterOwner(
+    centerId: string
+  ): Promise<{ id: string; name: string; email: string; isVerified: boolean; status: "active" | "pending" | "disabled" } | null>;
   getTeachersCount(centerId: string): Promise<number>;
   getStudentsCount(centerId: string): Promise<number>;
 }

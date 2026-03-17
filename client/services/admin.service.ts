@@ -1,5 +1,5 @@
 import { adminApi } from "./admin.api";
-import { BlockCenterPayload, UpdatePaymentStatusPayload } from "@/types/admin/adminTypes";
+import { BlockCenterPayload, UpdatePaymentStatusPayload, UpdateUserStatusPayload } from "@/types/admin/adminTypes";
 
 export const adminService = {
   getDashboard: () => adminApi.getDashboard(),
@@ -13,4 +13,5 @@ export const adminService = {
   rejectCenter: (id: string) => adminApi.rejectCenter(id),
   verifyUser: (id: string) => adminApi.verifyUser(id),
   unverifyUser: (id: string) => adminApi.unverifyUser(id),
+  updateUserStatus: (id: string, payload: UpdateUserStatusPayload) => adminApi.updateUserStatus(id, payload),
 };
