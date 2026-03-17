@@ -32,4 +32,6 @@ export const TYPES = {
     IAdminAuthController: Symbol("IAdminAuthController"),
     ICenterController: Symbol("ICenterController"),
     ICenterService: Symbol("ICenterService"),
+    IDashboardController: Symbol("IDashboardController"),
+    IDashboardService: Symbol("IDashboardService"),
 } as const

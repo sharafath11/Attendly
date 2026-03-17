@@ -5,7 +5,7 @@ import { IAdminRepository } from "../core/interfaces/repository/IAdminRepository
 import { TYPES } from "../core/types";
 import { AdminDashboardChartsDTO, AdminDashboardDTO, BlockCenterDTO, UpdatePaymentStatusDTO } from "../dtos/admin/admin.dto";
 import { CenterResponseDTO } from "../dtos/centers/centers.dto";
-import { ICenter } from "../models/center.model";
+import { CenterModel, ICenter } from "../models/center.model";
 import { UserModel } from "../models/user.Model";
 import { throwError } from "../utils/response";
 import { StatusCode } from "../enums/statusCode";
@@ -77,17 +77,79 @@ export class AdminService implements IAdminService {
   }
 
   async getDashboardCharts(): Promise<AdminDashboardChartsDTO> {
+    const now = new Date();
+    const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const start = new Date(now);
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+    start.setMonth(start.getMonth() - 5);
+
+    const buildMonthKeys = () => {
+      const keys: string[] = [];
+      const base = new Date(now);
+      base.setDate(1);
+      base.setHours(0, 0, 0, 0);
+      for (let i = 5; i >= 0; i -= 1) {
+        const current = new Date(base);
+        current.setMonth(base.getMonth() - i);
+        keys.push(`${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}`);
+      }
+      return keys;
+    };
+
+    const monthKeys = buildMonthKeys();
+
+    const revenueAgg = await CenterModel.aggregate([
+      {
+        $match: {
+          monthlyFee: { $ne: null },
+          lastPaymentDate: { $ne: null },
+        },
+      },
+      { $match: { lastPaymentDate: { $gte: start } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m", date: "$lastPaymentDate" } },
+          revenue: { $sum: "$monthlyFee" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const revenueMap = new Map<string, number>(
+      revenueAgg.map((item: { _id: string; revenue: number }) => [item._id, item.revenue])
+    );
+
+    const centersAgg = await CenterModel.aggregate([
+      { $match: { createdAt: { $gte: start } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+          centers: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const centersMap = new Map<string, number>(
+      centersAgg.map((item: { _id: string; centers: number }) => [item._id, item.centers])
+    );
+
     return {
-      revenueByMonth: [
-        { month: "Jan", revenue: 12000 },
-        { month: "Feb", revenue: 18000 },
-        { month: "Mar", revenue: 24000 },
-      ],
-      centersGrowth: [
-        { month: "Jan", centers: 10 },
-        { month: "Feb", centers: 18 },
-        { month: "Mar", centers: 27 },
-      ],
+      revenueByMonth: monthKeys.map((key) => {
+        const monthIndex = Number(key.split("-")[1]) - 1;
+        return {
+          month: monthLabels[monthIndex] ?? key,
+          revenue: revenueMap.get(key) ?? 0,
+        };
+      }),
+      centersGrowth: monthKeys.map((key) => {
+        const monthIndex = Number(key.split("-")[1]) - 1;
+        return {
+          month: monthLabels[monthIndex] ?? key,
+          centers: centersMap.get(key) ?? 0,
+        };
+      }),
     };
   }
 

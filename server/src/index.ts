@@ -12,6 +12,7 @@ import teacherAttendanceRoutes from "./routes/teacherAttendance.Routes";
 import adminRoutes from "./routes/admin.Routes";
 import adminAuthRoutes from "./routes/adminAuth.Routes";
 import centersRoutes from "./routes/centers.Routes";
+import dashboardRoutes from "./routes/dashboard.Routes";
 import { connectDB } from "./config/database";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -63,6 +64,7 @@ app.use("/api/teacher-attendance", teacherAttendanceRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/centers", centersRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Global error handler (last middleware)
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

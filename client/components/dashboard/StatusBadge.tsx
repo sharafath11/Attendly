@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 interface StatusBadgeProps {
-  status: "Paid" | "Pending" | "Overdue" | "Present" | "Absent";
+  status: "Paid" | "Pending" | "Overdue" | "Present" | "Absent" | "Leave";
 }
 
 const statusStyles: Record<StatusBadgeProps["status"], string> = {
@@ -10,6 +10,7 @@ const statusStyles: Record<StatusBadgeProps["status"], string> = {
   Overdue: "bg-rose-500/15 text-rose-500 border-rose-500/30",
   Present: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30",
   Absent: "bg-rose-500/15 text-rose-500 border-rose-500/30",
+  Leave: "bg-slate-500/15 text-slate-500 border-slate-500/30",
 };
 
 export default function StatusBadge({ status }: StatusBadgeProps) {

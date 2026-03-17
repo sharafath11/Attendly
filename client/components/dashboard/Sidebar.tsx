@@ -83,7 +83,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
       gsap.to(sidebarRef.current, { x: -320, duration: 0.25, ease: "power2.out" });
       gsap.to(overlayRef.current, { autoAlpha: 0, duration: 0.2 });
     }
-  }, [mobileOpen]);
+  }, [mobileOpen, isDesktop]);
 
   const items = useMemo(() => {
     const effectiveRole = role ?? "teacher";

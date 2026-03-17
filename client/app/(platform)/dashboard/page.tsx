@@ -12,89 +12,94 @@ import {
   YAxis,
 } from "recharts";
 import { Users, CalendarCheck2, WalletCards, Layers, Download } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import DashboardCard from "@/components/dashboard/DashboardCard";
 import DataTable from "@/components/dashboard/DataTable";
 import ChartCard from "@/components/dashboard/ChartCard";
 import StatusBadge from "@/components/dashboard/StatusBadge";
-import mockApi from "@/services/mockApi";
 import { exportToCsv } from "@/utils/exportToCsv";
+import { useDashboard } from "@/hooks/useDashboard";
+import type { DashboardData } from "@/types/dashboard/dashboardTypes";
+import { useMemo, useState } from "react";
 
-const attendanceData = [
-  { day: "Mon", present: 48 },
-  { day: "Tue", present: 52 },
-  { day: "Wed", present: 44 },
-  { day: "Thu", present: 56 },
-  { day: "Fri", present: 50 },
-  { day: "Sat", present: 38 },
-];
+const emptyDashboard: DashboardData = {
+  summary: {
+    totalStudents: 0,
+    todayAttendance: 0,
+    pendingFees: 0,
+    pendingFeesAmount: 0,
+    totalBatches: 0,
+  },
+  attendanceChart: [],
+  attendanceMonthlyChart: [],
+  feeChart: [],
+  recentAttendance: [],
+  recentPayments: [],
+  upcomingClasses: [],
+};
 
-const feeData = [
-  { month: "Jan", amount: 12000 },
-  { month: "Feb", amount: 15800 },
-  { month: "Mar", amount: 14200 },
-  { month: "Apr", amount: 17600 },
-  { month: "May", amount: 16400 },
-  { month: "Jun", amount: 18900 },
-];
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(value);
 
-const recentAttendance = [
-  { id: "1", student: "Aarav Kumar", batch: "Grade 10", status: "Present" },
-  { id: "2", student: "Maya Singh", batch: "Grade 9", status: "Absent" },
-  { id: "3", student: "Rohan Patel", batch: "Grade 11", status: "Present" },
-  { id: "4", student: "Zara Khan", batch: "Grade 12", status: "Present" },
-];
-
-const recentPayments = [
-  { id: "1", student: "Nila Thomas", amount: "₹2,400", date: "Mar 11" },
-  { id: "2", student: "Aditya Das", amount: "₹3,200", date: "Mar 10" },
-  { id: "3", student: "Sana Sheikh", amount: "₹2,800", date: "Mar 08" },
-  { id: "4", student: "Kiran Rao", amount: "₹3,500", date: "Mar 06" },
-];
-
-const upcomingClasses = [
-  { id: "1", name: "Grade 10 - Algebra", time: "Today, 4:00 PM" },
-  { id: "2", name: "Grade 12 - Physics", time: "Tomorrow, 10:00 AM" },
-  { id: "3", name: "Grade 9 - English", time: "Tomorrow, 3:00 PM" },
-];
+const formatDate = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
+};
 
 export default function DashboardPage() {
-  const { data } = useQuery({
-    queryKey: ["dashboardSummary"],
-    queryFn: async () => {
-      const response = await mockApi.get("/dashboard/summary");
-      return response.data as {
-        totalStudents: number;
-        todayAttendance: number;
-        pendingFees: number;
-        totalBatches: number;
-      };
-    },
-    initialData: {
-      totalStudents: 186,
-      todayAttendance: 142,
-      pendingFees: 18,
-      totalBatches: 12,
-    },
-  });
+  const { data: dashboardRes } = useDashboard();
+  const dashboard = dashboardRes?.data ?? emptyDashboard;
+  const [attendanceView, setAttendanceView] = useState<"weekly" | "monthly">("weekly");
+
+  const attendanceRate = dashboard.summary.totalStudents
+    ? Math.round((dashboard.summary.todayAttendance / dashboard.summary.totalStudents) * 100)
+    : 0;
+
+  const recentPayments = dashboard.recentPayments.map((payment) => ({
+    ...payment,
+    amount: formatCurrency(payment.amount),
+    date: formatDate(payment.date),
+  }));
+
+  const attendanceChartData = attendanceView === "weekly"
+    ? dashboard.attendanceChart
+    : dashboard.attendanceMonthlyChart;
+
+  const attendanceHasData = useMemo(
+    () => attendanceChartData.some((point) => point.present > 0),
+    [attendanceChartData]
+  );
+
+  const feeHasData = useMemo(
+    () => dashboard.feeChart.some((point) => point.amount > 0),
+    [dashboard.feeChart]
+  );
 
   const handleDownloadDashboardCsv = () => {
     const summaryRows = [
       {
         Metric: "Total Students",
-        Value: data.totalStudents,
+        Value: dashboard.summary.totalStudents,
       },
       {
         Metric: "Today Attendance",
-        Value: data.todayAttendance,
+        Value: dashboard.summary.todayAttendance,
       },
       {
         Metric: "Pending Fees",
-        Value: data.pendingFees,
+        Value: dashboard.summary.pendingFees,
+      },
+      {
+        Metric: "Pending Fees Amount",
+        Value: formatCurrency(dashboard.summary.pendingFeesAmount),
       },
       {
         Metric: "Total Batches",
-        Value: data.totalBatches,
+        Value: dashboard.summary.totalBatches,
       },
     ];
 
@@ -123,34 +128,71 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <DashboardCard
           title="Total Students"
-          value={data.totalStudents}
+          value={dashboard.summary.totalStudents}
           icon={<Users className="h-5 w-5" />}
-          trend="+12 this month"
+          trend={`${dashboard.summary.totalStudents} enrolled`}
         />
         <DashboardCard
           title="Today&apos;s Attendance"
-          value={data.todayAttendance}
+          value={dashboard.summary.todayAttendance}
           icon={<CalendarCheck2 className="h-5 w-5" />}
-          trend="93% present"
+          trend={dashboard.summary.totalStudents ? `${attendanceRate}% present today` : "No attendance yet"}
         />
         <DashboardCard
           title="Pending Fees"
-          value={data.pendingFees}
+          value={dashboard.summary.pendingFees}
           icon={<WalletCards className="h-5 w-5" />}
-          trend="₹42,000 outstanding"
+          trend={
+            dashboard.summary.pendingFeesAmount
+              ? `${formatCurrency(dashboard.summary.pendingFeesAmount)} pending`
+              : dashboard.summary.pendingFees
+                ? "Pending this month"
+                : "All clear"
+          }
         />
         <DashboardCard
           title="Total Batches"
-          value={data.totalBatches}
+          value={dashboard.summary.totalBatches}
           icon={<Layers className="h-5 w-5" />}
-          trend="3 new batches"
+          trend={dashboard.summary.totalBatches ? "Active batches" : "No batches yet"}
         />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <ChartCard title="Weekly Attendance" subtitle="Students present per day">
+        <ChartCard
+          title={attendanceView === "weekly" ? "Weekly Attendance" : "Monthly Attendance"}
+          subtitle={attendanceView === "weekly" ? "Students present per day" : "Students present per month"}
+        >
+          <div className="flex items-center justify-between gap-2 pb-2">
+            <span className="inline-flex items-center rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {attendanceView}
+            </span>
+            <button
+              type="button"
+              onClick={() => setAttendanceView("weekly")}
+              className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                attendanceView === "weekly"
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border text-muted-foreground"
+              }`}
+            >
+              Weekly
+            </button>
+            <button
+              type="button"
+              onClick={() => setAttendanceView("monthly")}
+              className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                attendanceView === "monthly"
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border text-muted-foreground"
+              }`}
+            >
+              Monthly
+            </button>
+          </div>
+          {attendanceHasData ? (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={attendanceData} margin={{ left: -20, right: 10 }}>
+            <AreaChart data={attendanceChartData} margin={{ left: -20, right: 10 }}>
               <defs>
                 <linearGradient id="attendanceGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4} />
@@ -170,18 +212,29 @@ export default function DashboardPage() {
               />
             </AreaChart>
           </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              No attendance data yet.
+            </div>
+          )}
         </ChartCard>
 
         <ChartCard title="Monthly Fee Collections" subtitle="Last 6 months">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={feeData} margin={{ left: -20, right: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" opacity={0.2} />
-              <XAxis dataKey="month" tickLine={false} axisLine={false} />
-              <YAxis tickLine={false} axisLine={false} />
-              <Tooltip cursor={{ fill: "#6366F1", opacity: 0.1 }} />
-              <Bar dataKey="amount" fill="#22C55E" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {feeHasData ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={dashboard.feeChart} margin={{ left: -20, right: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" opacity={0.2} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                <YAxis tickLine={false} axisLine={false} />
+                <Tooltip cursor={{ fill: "#6366F1", opacity: 0.1 }} />
+                <Bar dataKey="amount" fill="#22C55E" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              No fee data yet.
+            </div>
+          )}
         </ChartCard>
       </div>
 
@@ -198,10 +251,10 @@ export default function DashboardPage() {
               {
                 key: "status",
                 header: "Status",
-                render: (row) => <StatusBadge status={row.status as "Present" | "Absent"} />,
+                render: (row) => <StatusBadge status={row.status as "Present" | "Absent" | "Leave"} />,
               },
             ]}
-            data={recentAttendance}
+            data={dashboard.recentAttendance}
           />
 
           <div>
@@ -222,12 +275,16 @@ export default function DashboardPage() {
           <h2 className="text-base font-semibold text-foreground sm:text-lg">Upcoming Classes</h2>
           <p className="text-xs text-muted-foreground sm:text-sm">Next 48 hours</p>
           <div className="mt-4 space-y-4">
-            {upcomingClasses.map((session) => (
-              <div key={session.id} className="rounded-lg border border-border p-3">
-                <p className="text-sm font-medium text-foreground">{session.name}</p>
-                <p className="text-xs text-muted-foreground">{session.time}</p>
-              </div>
-            ))}
+            {dashboard.upcomingClasses.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No upcoming classes scheduled.</p>
+            ) : (
+              dashboard.upcomingClasses.map((session) => (
+                <div key={session.id} className="rounded-lg border border-border p-3">
+                  <p className="text-sm font-medium text-foreground">{session.name}</p>
+                  <p className="text-xs text-muted-foreground">{session.time}</p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

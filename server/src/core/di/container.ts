@@ -66,6 +66,10 @@ import { CenterController } from "../../controller/center.controller";
 import { ICenterController } from "../interfaces/controllers/ICenterController";
 import { CenterService } from "../../services/center.service";
 import { ICenterService } from "../interfaces/services/ICenterService";
+import { DashboardController } from "../../controller/dashboard.controller";
+import { IDashboardController } from "../interfaces/controllers/IDashboardController";
+import { DashboardService } from "../../services/dashboard.service";
+import { IDashboardService } from "../interfaces/services/IDashboardService";
 
 container.registerSingleton<IAuthService>(TYPES.IAuthServices, AuthService);
 container.registerSingleton<IAuthController>(TYPES.IAuthController, AuthController);
@@ -110,5 +114,8 @@ container.registerSingleton<IAdminAuthController>(TYPES.IAdminAuthController, Ad
 
 container.registerSingleton<ICenterService>(TYPES.ICenterService, CenterService);
 container.registerSingleton<ICenterController>(TYPES.ICenterController, CenterController);
+
+container.registerSingleton<IDashboardService>(TYPES.IDashboardService, DashboardService);
+container.registerSingleton<IDashboardController>(TYPES.IDashboardController, DashboardController);
 
 export { container };
