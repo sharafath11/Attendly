@@ -46,6 +46,9 @@ export const validateMarkFeePaid = (payload: MarkFeePaidDTO): void => {
   if (!payload.paymentMethod || !["Cash", "UPI", "Bank"].includes(payload.paymentMethod)) {
     throwError("Invalid payment method", StatusCode.BAD_REQUEST);
   }
+  if (payload.markedByUserId && !mongoose.Types.ObjectId.isValid(payload.markedByUserId)) {
+    throwError("Invalid markedByUserId", StatusCode.BAD_REQUEST);
+  }
 };
 
 export const validateUpdateFeeStatus = (payload: UpdateFeeStatusDTO): void => {

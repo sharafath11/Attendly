@@ -1,5 +1,11 @@
 import { FeeStatus, PaymentMethod } from "../../models/fees.model";
 
+export interface FeeActorDTO {
+  id: string;
+  name: string;
+  role?: string;
+}
+
 export interface FeeStudentDTO {
   id: string;
   name: string;
@@ -28,6 +34,8 @@ export interface FeeRecordDTO {
   paidDate?: Date;
   markedBy?: string;
   editedBy?: string;
+  marker?: FeeActorDTO;
+  editor?: FeeActorDTO;
   changeNote?: string;
   editHistory: {
     editedBy: string;
@@ -35,6 +43,7 @@ export interface FeeRecordDTO {
     newStatus: FeeStatus;
     note?: string;
     editedAt: Date;
+    editor?: FeeActorDTO;
   }[];
   student: FeeStudentDTO;
   batch: FeeBatchDTO;
@@ -55,6 +64,7 @@ export interface MarkFeePaidDTO {
   month: number;
   year: number;
   paymentMethod: PaymentMethod;
+  markedByUserId?: string;
 }
 
 export interface UpdateFeeStatusDTO {

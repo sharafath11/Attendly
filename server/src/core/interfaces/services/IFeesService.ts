@@ -2,7 +2,7 @@ import { FeeFiltersDTO, FeeRecordDTO, MarkFeePaidDTO, UpdateFeeStatusDTO } from 
 
 export interface IFeesService {
   getFees(centerId: string, filters: FeeFiltersDTO): Promise<FeeRecordDTO[]>;
-  markFeePaid(centerId: string, payload: MarkFeePaidDTO): Promise<void>;
-  updateFeeStatus(centerId: string, payload: UpdateFeeStatusDTO): Promise<void>;
+  markFeePaid(centerId: string, authUserId: string, payload: MarkFeePaidDTO): Promise<void>;
+  updateFeeStatus(centerId: string, authUserId: string, payload: UpdateFeeStatusDTO): Promise<void>;
   getPendingFees(centerId: string, month?: number, year?: number): Promise<FeeRecordDTO[]>;
 }

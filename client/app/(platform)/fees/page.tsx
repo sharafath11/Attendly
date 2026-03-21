@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DashboardCard from "@/components/dashboard/DashboardCard";
 import DataTable from "@/components/dashboard/DataTable";
 import StatusBadge from "@/components/dashboard/StatusBadge";
@@ -10,8 +10,11 @@ import { useSubscription } from "@/components/dashboard/SubscriptionContext";
 import { showErrorToast, showSuccessToast } from "@/utils/toast";
 import { WalletCards, AlertTriangle } from "lucide-react";
 import { useBatches } from "@/hooks/useBatches";
+import { useTeachers } from "@/hooks/useTeachers";
 import { useFees, useMarkFeePaid, useUpdateFeeStatus } from "@/hooks/useFees";
 import type { FeeRecord, FeeStatus, PaymentMethod } from "@/types/fees/feesTypes";
+import type { User } from "@/types/user/authTypes";
+import { userAuthMethods } from "@/services/methods/userMethods";
 import { exportToCsv } from "@/utils/exportToCsv";
 
 const monthNames = [
@@ -46,7 +49,10 @@ export default function FeesPage() {
   const [status, setStatus] = useState<FeeStatus | "All">("All");
 
   const { data: batchesData } = useBatches();
+  const { data: teachersData } = useTeachers();
   const batches = batchesData?.data?.batches ?? [];
+  const teachers = teachersData?.data ?? [];
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const filters = useMemo(
     () => ({
@@ -76,12 +82,55 @@ export default function FeesPage() {
   const [viewOpen, setViewOpen] = useState(false);
   const [selectedFee, setSelectedFee] = useState<FeeRecord | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>("Cash");
+  const [selectedMarkedByUserId, setSelectedMarkedByUserId] = useState("");
   const [editStatus, setEditStatus] = useState<FeeStatus>("Pending");
   const [changeNote, setChangeNote] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    const loadCurrentUser = async () => {
+      const res = await userAuthMethods.me();
+      if (!active || !res?.ok || !res.data) return;
+      setCurrentUser(res.data as User);
+      setSelectedMarkedByUserId(res.data.userId ?? "");
+    };
+
+    loadCurrentUser();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const markerOptions = useMemo(() => {
+    const options: Array<{ id: string; label: string }> = [];
+    const seen = new Set<string>();
+
+    if (currentUser?.userId) {
+      seen.add(currentUser.userId);
+      options.push({
+        id: currentUser.userId,
+        label: `${currentUser.name} (Owner)`,
+      });
+    }
+
+    teachers.forEach((teacher) => {
+      if (seen.has(teacher.id)) return;
+      seen.add(teacher.id);
+      options.push({
+        id: teacher.id,
+        label: `${teacher.name} (Teacher)`,
+      });
+    });
+
+    return options;
+  }, [currentUser, teachers]);
 
   const openMarkPaid = (fee: FeeRecord) => {
     setSelectedFee(fee);
     setSelectedPaymentMethod("Cash");
+    setSelectedMarkedByUserId(currentUser?.userId ?? "");
     setConfirmOpen(true);
   };
 
@@ -105,6 +154,7 @@ export default function FeesPage() {
       month: selectedFee.month,
       year: selectedFee.year,
       paymentMethod: selectedPaymentMethod,
+      markedByUserId: selectedMarkedByUserId || currentUser?.userId,
     });
     if (!res || !res.ok) {
       showErrorToast(res?.msg || "Failed to mark paid");
@@ -286,6 +336,23 @@ export default function FeesPage() {
         </p>
         <div className="mt-4">
           <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Received By
+          </label>
+          <select
+            value={selectedMarkedByUserId}
+            onChange={(event) => setSelectedMarkedByUserId(event.target.value)}
+            className="mt-2 w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="">Select owner or teacher</option>
+            {markerOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="mt-4">
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Payment Method
           </label>
           <select
@@ -304,7 +371,11 @@ export default function FeesPage() {
           <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleConfirmPaid} isLoading={markPaid.isPending} disabled={!isActive}>
+          <Button
+            onClick={handleConfirmPaid}
+            isLoading={markPaid.isPending}
+            disabled={!isActive || !selectedMarkedByUserId}
+          >
             Confirm
           </Button>
         </div>
@@ -395,13 +466,13 @@ export default function FeesPage() {
             <div>
               <p className="text-xs uppercase tracking-wide">Marked By</p>
               <p className="text-sm font-medium text-foreground">
-                {selectedFee?.markedBy ?? "—"}
+                {selectedFee?.marker?.name ?? "—"}
               </p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-wide">Last Edited By</p>
               <p className="text-sm font-medium text-foreground">
-                {selectedFee?.editedBy ?? "—"}
+                {selectedFee?.editor?.name ?? "—"}
               </p>
             </div>
           </div>
@@ -417,7 +488,7 @@ export default function FeesPage() {
                       {entry.newStatus}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Edited By: {entry.editedBy}
+                      Edited By: {entry.editor?.name ?? "—"}
                     </p>
                     {entry.note && (
                       <p className="text-xs text-muted-foreground">Note: {entry.note}</p>

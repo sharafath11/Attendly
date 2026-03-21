@@ -377,7 +377,6 @@ export class AttendanceRepository
             },
             $setOnInsert: {
               centerId: centerObjectId,
-              markedBy: markedByObjectId,
               batchId: batchObjectId,
               studentId: new mongoose.Types.ObjectId(record.studentId),
               date,

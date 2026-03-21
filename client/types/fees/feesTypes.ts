@@ -17,6 +17,12 @@ export type FeeBatch = {
   medium: string;
 };
 
+export type FeeActor = {
+  id: string;
+  name: string;
+  role?: string;
+};
+
 export type FeeRecord = {
   id: string;
   studentId: string;
@@ -29,6 +35,8 @@ export type FeeRecord = {
   paidDate?: string;
   markedBy?: string;
   editedBy?: string;
+  marker?: FeeActor;
+  editor?: FeeActor;
   changeNote?: string;
   editHistory: {
     editedBy: string;
@@ -36,6 +44,7 @@ export type FeeRecord = {
     newStatus: FeeStatus;
     note?: string;
     editedAt: string;
+    editor?: FeeActor;
   }[];
   student: FeeStudent;
   batch: FeeBatch;
@@ -56,6 +65,7 @@ export type MarkFeePaidPayload = {
   month: number;
   year: number;
   paymentMethod: PaymentMethod;
+  markedByUserId?: string;
 };
 
 export type UpdateFeeStatusPayload = {

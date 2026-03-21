@@ -37,16 +37,16 @@ export class FeesController implements IFeesController {
 
   async markFeePaid(req: Request, res: Response): Promise<void> {
     try {
-      const { centerId, userId } = req as AuthenticatedRequest;
+      const { centerId, userId, authUserId } = req as AuthenticatedRequest;
       const scopeId = centerId ?? userId;
-      if (!scopeId) {
+      if (!scopeId || !authUserId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
       const payload = req.body as MarkFeePaidDTO;
       validateMarkFeePaid(payload);
 
-      await this._feesService.markFeePaid(scopeId, payload);
+      await this._feesService.markFeePaid(scopeId, authUserId, payload);
       sendResponse(res, StatusCode.OK, "Fee marked as paid", true);
     } catch (error) {
       handleControllerError(res, error);
@@ -55,16 +55,16 @@ export class FeesController implements IFeesController {
 
   async updateFeeStatus(req: Request, res: Response): Promise<void> {
     try {
-      const { centerId, userId } = req as AuthenticatedRequest;
+      const { centerId, userId, authUserId } = req as AuthenticatedRequest;
       const scopeId = centerId ?? userId;
-      if (!scopeId) {
+      if (!scopeId || !authUserId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
       const payload = req.body as UpdateFeeStatusDTO;
       validateUpdateFeeStatus(payload);
 
-      await this._feesService.updateFeeStatus(scopeId, payload);
+      await this._feesService.updateFeeStatus(scopeId, authUserId, payload);
       sendResponse(res, StatusCode.OK, "Fee status updated", true);
     } catch (error) {
       handleControllerError(res, error);

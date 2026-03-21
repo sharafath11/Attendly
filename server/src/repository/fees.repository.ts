@@ -11,6 +11,103 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
     super(FeeModel);
   }
 
+  private buildFeeProjection() {
+    return {
+      id: "$_id",
+      studentId: { $toString: "$studentId" },
+      batchId: { $toString: "$batchId" },
+      month: 1,
+      year: 1,
+      amount: 1,
+      status: "$effectiveStatus",
+      paymentMethod: 1,
+      paidDate: 1,
+      markedBy: { $toString: "$markedBy" },
+      editedBy: { $toString: "$editedBy" },
+      marker: {
+        $cond: [
+          { $ifNull: ["$markedByUser._id", false] },
+          {
+            id: { $toString: "$markedByUser._id" },
+            name: { $ifNull: ["$markedByUser.name", "$markedByUser.username"] },
+            role: "$markedByUser.role",
+          },
+          null,
+        ],
+      },
+      editor: {
+        $cond: [
+          { $ifNull: ["$editedByUser._id", false] },
+          {
+            id: { $toString: "$editedByUser._id" },
+            name: { $ifNull: ["$editedByUser.name", "$editedByUser.username"] },
+            role: "$editedByUser.role",
+          },
+          null,
+        ],
+      },
+      changeNote: 1,
+      editHistory: {
+        $map: {
+          input: "$editHistory",
+          as: "entry",
+          in: {
+            editedBy: { $toString: "$$entry.editedBy" },
+            previousStatus: "$$entry.previousStatus",
+            newStatus: "$$entry.newStatus",
+            note: "$$entry.note",
+            editedAt: "$$entry.editedAt",
+            editor: {
+              $let: {
+                vars: {
+                  matchedUser: {
+                    $arrayElemAt: [
+                      {
+                        $filter: {
+                          input: "$editHistoryUsers",
+                          as: "user",
+                          cond: { $eq: ["$$user._id", "$$entry.editedBy"] },
+                        },
+                      },
+                      0,
+                    ],
+                  },
+                },
+                in: {
+                  $cond: [
+                    { $ifNull: ["$$matchedUser._id", false] },
+                    {
+                      id: { $toString: "$$matchedUser._id" },
+                      name: { $ifNull: ["$$matchedUser.name", "$$matchedUser.username"] },
+                      role: "$$matchedUser.role",
+                    },
+                    null,
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+      createdAt: 1,
+      updatedAt: 1,
+      student: {
+        id: { $toString: "$student._id" },
+        name: "$student.name",
+        phone: "$student.phone",
+        parentPhone: "$student.parentPhone",
+        monthlyFee: "$student.monthlyFee",
+      },
+      batch: {
+        id: { $toString: "$batch._id" },
+        batchName: "$batch.batchName",
+        classLevel: "$batch.classLevel",
+        session: "$batch.session",
+        medium: "$batch.medium",
+      },
+    };
+  }
+
   async ensureFeesForMonth(centerId: string, filters: FeeFiltersDTO): Promise<void> {
     try {
       const centerObjectId = new mongoose.Types.ObjectId(centerId);
@@ -150,49 +247,33 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
         },
         { $unwind: "$batch" },
         {
-          $project: {
-            id: "$_id",
-            studentId: { $toString: "$studentId" },
-            batchId: { $toString: "$batchId" },
-            month: 1,
-            year: 1,
-            amount: 1,
-            status: "$effectiveStatus",
-            paymentMethod: 1,
-            paidDate: 1,
-            markedBy: { $toString: "$markedBy" },
-            editedBy: { $toString: "$editedBy" },
-            changeNote: 1,
-            editHistory: {
-              $map: {
-                input: "$editHistory",
-                as: "entry",
-                in: {
-                  editedBy: { $toString: "$$entry.editedBy" },
-                  previousStatus: "$$entry.previousStatus",
-                  newStatus: "$$entry.newStatus",
-                  note: "$$entry.note",
-                  editedAt: "$$entry.editedAt",
-                },
-              },
-            },
-            createdAt: 1,
-            updatedAt: 1,
-            student: {
-              id: { $toString: "$student._id" },
-              name: "$student.name",
-              phone: "$student.phone",
-              parentPhone: "$student.parentPhone",
-              monthlyFee: "$student.monthlyFee",
-            },
-            batch: {
-              id: { $toString: "$batch._id" },
-              batchName: "$batch.batchName",
-              classLevel: "$batch.classLevel",
-              session: "$batch.session",
-              medium: "$batch.medium",
-            },
+          $lookup: {
+            from: "users",
+            localField: "markedBy",
+            foreignField: "_id",
+            as: "markedByUser",
           },
+        },
+        { $unwind: { path: "$markedByUser", preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "editedBy",
+            foreignField: "_id",
+            as: "editedByUser",
+          },
+        },
+        { $unwind: { path: "$editedByUser", preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "editHistory.editedBy",
+            foreignField: "_id",
+            as: "editHistoryUsers",
+          },
+        },
+        {
+          $project: this.buildFeeProjection(),
         },
         { $sort: { "student.name": 1 } },
       ];
@@ -203,10 +284,12 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
     }
   }
 
-  async markFeePaid(centerId: string, payload: MarkFeePaidDTO): Promise<void> {
+  async markFeePaid(centerId: string, authUserId: string, payload: MarkFeePaidDTO): Promise<void> {
     try {
       const now = new Date();
       const centerObjectId = new mongoose.Types.ObjectId(centerId);
+      const authUserObjectId = new mongoose.Types.ObjectId(authUserId);
+      const markedByObjectId = new mongoose.Types.ObjectId(payload.markedByUserId ?? authUserId);
       const existing = await this.model.findOne({
         $or: [{ centerId: centerObjectId }, { userId: centerId }],
         studentId: new mongoose.Types.ObjectId(payload.studentId),
@@ -230,12 +313,12 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
             status: "Paid",
             paymentMethod: payload.paymentMethod,
             paidDate: now,
-            markedBy: existing?.markedBy ?? centerObjectId,
-            editedBy: centerObjectId,
+            markedBy: markedByObjectId,
+            editedBy: authUserObjectId,
           },
           $push: {
             editHistory: {
-              editedBy: centerObjectId,
+              editedBy: authUserObjectId,
               previousStatus,
               newStatus: "Paid",
               note: "Marked as paid",
@@ -249,10 +332,11 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
     }
   }
 
-  async updateFeeStatus(centerId: string, payload: UpdateFeeStatusDTO): Promise<void> {
+  async updateFeeStatus(centerId: string, authUserId: string, payload: UpdateFeeStatusDTO): Promise<void> {
     try {
       const now = new Date();
       const centerObjectId = new mongoose.Types.ObjectId(centerId);
+      const authUserObjectId = new mongoose.Types.ObjectId(authUserId);
       const existing = await this.model.findOne({
         $or: [{ centerId: centerObjectId }, { userId: centerId }],
         studentId: new mongoose.Types.ObjectId(payload.studentId),
@@ -274,13 +358,13 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
         {
           $set: {
             status: payload.status,
-            editedBy: centerObjectId,
+            editedBy: authUserObjectId,
             changeNote: payload.changeNote,
             ...(payload.status === "Paid" ? { paidDate: now } : { paidDate: null }),
           },
           $push: {
             editHistory: {
-              editedBy: centerObjectId,
+              editedBy: authUserObjectId,
               previousStatus,
               newStatus: payload.status,
               note: payload.changeNote,
@@ -356,49 +440,33 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
         },
         { $unwind: "$batch" },
         {
-          $project: {
-            id: "$_id",
-            studentId: { $toString: "$studentId" },
-            batchId: { $toString: "$batchId" },
-            month: 1,
-            year: 1,
-            amount: 1,
-            status: "$effectiveStatus",
-            paymentMethod: 1,
-            paidDate: 1,
-            markedBy: { $toString: "$markedBy" },
-            editedBy: { $toString: "$editedBy" },
-            changeNote: 1,
-            editHistory: {
-              $map: {
-                input: "$editHistory",
-                as: "entry",
-                in: {
-                  editedBy: { $toString: "$$entry.editedBy" },
-                  previousStatus: "$$entry.previousStatus",
-                  newStatus: "$$entry.newStatus",
-                  note: "$$entry.note",
-                  editedAt: "$$entry.editedAt",
-                },
-              },
-            },
-            createdAt: 1,
-            updatedAt: 1,
-            student: {
-              id: { $toString: "$student._id" },
-              name: "$student.name",
-              phone: "$student.phone",
-              parentPhone: "$student.parentPhone",
-              monthlyFee: "$student.monthlyFee",
-            },
-            batch: {
-              id: { $toString: "$batch._id" },
-              batchName: "$batch.batchName",
-              classLevel: "$batch.classLevel",
-              session: "$batch.session",
-              medium: "$batch.medium",
-            },
+          $lookup: {
+            from: "users",
+            localField: "markedBy",
+            foreignField: "_id",
+            as: "markedByUser",
           },
+        },
+        { $unwind: { path: "$markedByUser", preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "editedBy",
+            foreignField: "_id",
+            as: "editedByUser",
+          },
+        },
+        { $unwind: { path: "$editedByUser", preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: "users",
+            localField: "editHistory.editedBy",
+            foreignField: "_id",
+            as: "editHistoryUsers",
+          },
+        },
+        {
+          $project: this.buildFeeProjection(),
         },
         { $sort: { "student.name": 1 } },
       ];
