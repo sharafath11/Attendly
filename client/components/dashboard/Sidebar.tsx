@@ -131,7 +131,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
             {!collapsed && (
               <div>
                 <p className="text-sm font-semibold">Attendly</p>
-                <p className="text-xs text-muted-foreground">Tuition Suite</p>
+                <p className="text-xs text-muted-foreground">v 0.21.1</p>
               </div>
             )}
           </div>

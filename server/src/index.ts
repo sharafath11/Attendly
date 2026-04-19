@@ -28,16 +28,26 @@ import activityLogRoutes from "./routes/activityLog.Routes";
 import paymentRoutes from "./routes/payment.Routes";
 import "./models/parentLink.model";
 
+dotenv.config({ path: ".env.local" });
 dotenv.config();
 const app = express();
 app.set("trust proxy", 1);
+
+const allowedOrigins = (
+  process.env.CORS_ORIGINS ||
+  [
+    "http://localhost:3000",
+    "https://attendly-sage.vercel.app",
+    "https://attendly.sharafathabi.cloud",
+  ].join(",")
+)
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "https://attendly-sage.vercel.app",
-      "https://attendly.sharafathabi.cloud",
-    ],
+    origin: allowedOrigins,
     credentials: true,
   })
 );

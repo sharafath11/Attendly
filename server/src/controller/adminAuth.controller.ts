@@ -22,13 +22,13 @@ export class AdminAuthController implements IAdminAuthController {
 
   async login(req: Request, res: Response): Promise<void> {
     try {
-      const { username, password } = req.body ?? {};
-      if (!username || !password) {
-        throwError("Username and password are required", StatusCode.BAD_REQUEST);
+      const { email, password } = req.body ?? {};
+      if (!email || !password) {
+        throwError("Email and password are required", StatusCode.BAD_REQUEST);
       }
 
-      const result = await this._adminAuthService.login(username, password);
-      const tokenPayloadId = result.username;
+      const result = await this._adminAuthService.login(email, password);
+      const tokenPayloadId = result.email;
       const accessToken = generateAccessToken(tokenPayloadId, "super_admin");
       const refreshToken = generateRefreshToken(tokenPayloadId, "super_admin");
       setAdminTokensInCookies(res, accessToken, refreshToken);

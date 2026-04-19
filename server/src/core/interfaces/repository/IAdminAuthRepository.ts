@@ -1,3 +1,3 @@
 export interface IAdminAuthRepository {
-  getAdminCredentials(): { username: string; password: string };
+  getAdminCredentials(): { email: string; password: string };
 }

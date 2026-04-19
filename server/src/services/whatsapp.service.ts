@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 
+dotenv.config({ path: ".env.local" });
 dotenv.config();
 
 export type WhatsAppSendResult = { ok: true; messageId?: string } | { ok: false; error: string };

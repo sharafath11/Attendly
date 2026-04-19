@@ -12,20 +12,19 @@ export class AdminAuthService implements IAdminAuthService {
     private _adminAuthRepository: IAdminAuthRepository
   ) {}
 
-  async login(username: string, password: string): Promise<{ username: string; role: "super_admin" }> {
+  async login(email: string, password: string): Promise<{ email: string; role: "super_admin" }> {
     const creds = this._adminAuthRepository.getAdminCredentials();
-    console.log("username ",username,"password",password)
-    if (username !== creds.username || password !== creds.password) {
+    if (email !== creds.email || password !== creds.password) {
       throwError("Invalid admin credentials", StatusCode.UNAUTHORIZED);
     }
 
-    return { username, role: "super_admin" };
+    return { email, role: "super_admin" };
   }
 
-  async me(tokenUserId: string): Promise<{ username: string; role: "super_admin" }> {
+  async me(tokenUserId: string): Promise<{ email: string; role: "super_admin" }> {
     if (!tokenUserId) {
       throwError("Invalid admin token", StatusCode.UNAUTHORIZED);
     }
-    return { username: tokenUserId, role: "super_admin" };
+    return { email: tokenUserId, role: "super_admin" };
   }
 }

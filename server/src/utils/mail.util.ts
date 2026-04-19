@@ -2,6 +2,7 @@ import fetch from "node-fetch";
 import dotenv from "dotenv";
 import { MailTemplates } from "../const/mailTemplates";
 
+dotenv.config({ path: ".env.local" });
 dotenv.config();
 
 // MailBluster configuration

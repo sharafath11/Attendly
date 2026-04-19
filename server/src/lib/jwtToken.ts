@@ -3,20 +3,35 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { TokenPayload } from "../types/authTypes";
 
-dotenv.config()
+dotenv.config({ path: ".env.local" });
+dotenv.config();
 const SECRET_KEY = process.env.JWT_SECRET || "yourAccessSecret";
 const REFRESH_KEY = process.env.REFRESH_SECRET || "yourRefreshSecret";
 const ACCESS_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_IN = "7d";
 
+const normalizeCookieDomain = (value?: string) => {
+  if (!value) return undefined;
+  const normalized = value
+    .trim()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "");
+  return normalized || undefined;
+};
+
+const cookieDomain = normalizeCookieDomain(process.env.COOKIE_DOMAIN);
+const cookieSecure = process.env.COOKIE_SECURE
+  ? process.env.COOKIE_SECURE === "true"
+  : process.env.NODE_ENV === "production";
+const cookieSameSite =
+  (process.env.COOKIE_SAME_SITE as "lax" | "strict" | "none" | undefined) ??
+  (cookieSecure ? "none" : "lax");
 
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "none" as const,
-  ...(process.env.COOKIE_DOMAIN
-    ? { domain: process.env.COOKIE_DOMAIN }
-    : {}),
+  secure: cookieSecure,
+  sameSite: cookieSameSite,
+  ...(cookieDomain ? { domain: cookieDomain } : {}),
   path: "/",
 };
 

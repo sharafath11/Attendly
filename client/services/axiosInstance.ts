@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const baseURL = process.env.NEXT_PUBLIC_BASEURL;
+export const baseURL = process.env.NEXT_PUBLIC_BASEURL || "http://localhost:5000/api";
 const AUTH_DEBUG = process.env.NEXT_PUBLIC_DEBUG_AUTH === "true";
 
 const axiosInstance = axios.create({

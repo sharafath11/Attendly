@@ -1,6 +1,7 @@
 import Redis from "ioredis";
 import dotenv from "dotenv";
 
+dotenv.config({ path: ".env.local" });
 dotenv.config();
 
 export interface RedisLike {

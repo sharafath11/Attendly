@@ -12,7 +12,7 @@ import { showErrorToast, showSuccessToast } from "@/utils/toast";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ username: "", password: "" });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 
@@ -27,7 +27,7 @@ export default function AdminLoginPage() {
     setAlertMessage("");
 
     const res = await adminAuthService.login({
-      username: formData.username,
+      email: formData.email,
       password: formData.password,
     });
 
@@ -50,11 +50,12 @@ export default function AdminLoginPage() {
         {alertMessage && <Alert type="error" message={alertMessage} onClose={() => setAlertMessage("")} />}
 
         <Input
-          label="Username"
-          name="username"
-          value={formData.username}
+          label="Email"
+          name="email"
+          type="email"
+          value={formData.email}
           onChange={handleChange}
-          placeholder="admin"
+          placeholder="admin@example.com"
         />
 
         <PasswordInput
