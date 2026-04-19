@@ -12,6 +12,7 @@ import {
 } from "../dtos/attendance/attendance.dto";
 import { throwError } from "../utils/response";
 import { StatusCode } from "../enums/statusCode";
+import { logActivity } from "../utils/activityLog.util";
 
 @injectable()
 export class AttendanceService implements IAttendanceService {
@@ -106,6 +107,14 @@ export class AttendanceService implements IAttendanceService {
         payload.records,
         markedBy
       );
+      await logActivity({
+        centerId,
+        actorUserId: markedBy,
+        action: "attendance_saved",
+        entityType: "attendance",
+        entityId: payload.batchId,
+        summary: `Attendance saved for batch on ${payload.date}`,
+      });
       return;
     }
     if (payload.studentId && payload.status) {
@@ -117,6 +126,14 @@ export class AttendanceService implements IAttendanceService {
         markedBy,
         payload.batchId
       );
+      await logActivity({
+        centerId,
+        actorUserId: markedBy,
+        action: "attendance_saved",
+        entityType: "attendance",
+        entityId: payload.studentId,
+        summary: `Attendance ${payload.status} for student on ${payload.date}`,
+      });
     }
   }
 

@@ -16,6 +16,7 @@ import { throwError } from "../utils/response";
 import { StatusCode } from "../enums/statusCode";
 import { MESSAGES } from "../const/messages";
 import { IUser } from "../types/userTypes";
+import mongoose from "mongoose";
 
 @injectable()
 export class TeacherService implements ITeacherService {
@@ -117,6 +118,15 @@ export class TeacherService implements ITeacherService {
     const center = await this._centerRepository.findById(centerId);
     if (!center) {
       throwError("Center not found", StatusCode.NOT_FOUND);
+    }
+
+    const teacherCount = await this._teacherRepository.count({
+      centerId: new mongoose.Types.ObjectId(centerId),
+      role: "teacher",
+    });
+    const teacherLimit = center.teacherLimit ?? 50;
+    if (teacherCount >= teacherLimit) {
+      throwError(`Teacher limit reached (${teacherLimit}) for your subscription.`, StatusCode.BAD_REQUEST);
     }
 
     const username = await this.generateTeacherUsername(center.name, centerId);

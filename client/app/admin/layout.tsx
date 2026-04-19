@@ -13,8 +13,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const navItems = [
     { label: "Dashboard", href: "/admin/dashboard" },
     { label: "Centers", href: "/admin/centers" },
+    { label: "Users", href: "/admin/users" },
+    { label: "Revenue", href: "/admin/payments" },
+    { label: "Logs", href: "/admin/logs" },
   ];
-  const pageTitle = navItems.find((item) => pathname?.startsWith(item.href))?.label ?? "Admin";
+  const pageTitle =
+    [...navItems]
+      .sort((a, b) => b.href.length - a.href.length)
+      .find((item) => pathname === item.href || pathname?.startsWith(`${item.href}/`))?.label ?? "Admin";
 
   useEffect(() => {
     if (pathname === "/admin/login") return;
@@ -61,20 +67,25 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <h1 className="text-lg font-semibold">Control Center</h1>
           </div>
           <nav className="space-y-2 text-sm">
-            {navItems.map((item) => (
+            {navItems.map((item) => {
+              const active =
+                pathname === item.href ||
+                (item.href !== "/admin/dashboard" && pathname?.startsWith(`${item.href}/`));
+              return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
                   "block rounded-lg px-3 py-2 transition-colors",
-                  pathname === item.href
+                  active
                     ? "bg-secondary text-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-secondary"
                 )}
               >
                 {item.label}
               </Link>
-            ))}
+            );
+            })}
           </nav>
         </aside>
         <main className="flex-1 bg-muted/10 p-8">

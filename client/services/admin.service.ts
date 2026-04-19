@@ -4,6 +4,10 @@ import { BlockCenterPayload, UpdatePaymentStatusPayload, UpdateUserStatusPayload
 export const adminService = {
   getDashboard: () => adminApi.getDashboard(),
   getDashboardCharts: () => adminApi.getDashboardCharts(),
+  getMetrics: () => adminApi.getMetrics(),
+  getRevenue: () => adminApi.getRevenue(),
+  getUsers: (role?: string) => adminApi.getUsers(role),
+  getLogs: () => adminApi.getLogs(),
   getCenters: () => adminApi.getCenters(),
   getCenterById: (id: string) => adminApi.getCenterById(id),
   blockCenter: (id: string, payload: BlockCenterPayload) => adminApi.blockCenter(id, payload),

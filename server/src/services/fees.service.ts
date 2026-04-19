@@ -7,6 +7,7 @@ import { TYPES } from "../core/types";
 import { FeeFiltersDTO, FeeRecordDTO, MarkFeePaidDTO, UpdateFeeStatusDTO } from "../dtos/fees/fees.dto";
 import { throwError } from "../utils/response";
 import { StatusCode } from "../enums/statusCode";
+import { logActivity } from "../utils/activityLog.util";
 
 @injectable()
 export class FeesService implements IFeesService {
@@ -59,11 +60,28 @@ export class FeesService implements IFeesService {
       ...payload,
       markedByUserId,
     });
+
+    await logActivity({
+      centerId,
+      actorUserId: markedByUserId,
+      action: "fee_marked_paid",
+      entityType: "fee",
+      entityId: `${payload.studentId}-${payload.month}-${payload.year}`,
+      summary: `Marked fee paid for student ${payload.studentId} (${payload.month}/${payload.year})`,
+    });
   }
 
   async updateFeeStatus(centerId: string, authUserId: string, payload: UpdateFeeStatusDTO): Promise<void> {
     await this.ensureActiveSubscription(centerId, "Subscription inactive. Fee updates disabled.");
     await this._feesRepository.updateFeeStatus(centerId, authUserId, payload);
+    await logActivity({
+      centerId,
+      actorUserId: authUserId,
+      action: "fee_status_updated",
+      entityType: "fee",
+      entityId: `${payload.studentId}-${payload.month}-${payload.year}`,
+      summary: `Fee status → ${payload.status} (${payload.month}/${payload.year})`,
+    });
   }
 
   async getPendingFees(centerId: string, month?: number, year?: number): Promise<FeeRecordDTO[]> {

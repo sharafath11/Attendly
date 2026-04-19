@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Navbar from "@/components/dashboard/Navbar";
 import PageTransition from "@/components/dashboard/PageTransition";
+import MobileBottomNav from "@/components/product/MobileBottomNav";
 import { centersService } from "@/services/centers.service";
 import { SubscriptionProvider } from "@/components/dashboard/SubscriptionContext";
 import { userAuthMethods } from "@/services/methods/userMethods";
@@ -126,11 +127,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 Your subscription will expire in {warningDays} days. Please renew to avoid service interruption.
               </div>
             )}
-            <main className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
+            <main className="flex-1 px-4 py-5 pb-24 sm:px-6 lg:px-8 lg:pb-5">
               <div className="mx-auto w-full max-w-[1440px]">
                 <PageTransition>{children}</PageTransition>
               </div>
             </main>
+            <MobileBottomNav role={role} />
           </div>
         </div>
       </div>

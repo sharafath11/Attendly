@@ -34,7 +34,7 @@ export const authenticateToken = (
       });
     }
     const role = decoded?.role === "owner" ? "center_owner" : decoded?.role;
-    if (decoded?.id && ["center_owner", "teacher", "super_admin"].includes(role)) {
+    if (decoded?.id && ["center_owner", "teacher", "super_admin", "parent"].includes(role)) {
       if (AUTH_DEBUG) {
         console.log("[AuthDebug] middleware:authorized", {
           userId: decoded.id,

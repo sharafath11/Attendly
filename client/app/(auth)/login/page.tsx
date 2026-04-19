@@ -131,7 +131,7 @@ export default function LoginPage() {
   const isFormValid = formData.email.trim() && formData.password
 
   return (
-    <AuthCard title="Sign in" description="Welcome back to your account">
+    <AuthCard title="Welcome back" description="Enter your phone or email to continue">
       <form onSubmit={handleSubmit} className="space-y-4">
         {alertMessage && <Alert type="error" message={alertMessage} onClose={() => setAlertMessage("")} />}
 
@@ -141,7 +141,7 @@ export default function LoginPage() {
           type="text"
           value={formData.email}
           onChange={handleChange}
-          placeholder="your_username"
+          placeholder="email or username"
           error={errors.email}
         />
 
@@ -182,6 +182,13 @@ export default function LoginPage() {
           </svg>
           Continue with Google
         </Button> */}
+
+        <p className="text-center text-sm text-muted-foreground">
+          Are you a parent?{" "}
+          <Link href="/parent" className="font-medium text-foreground hover:underline">
+            See the family app (preview)
+          </Link>
+        </p>
 
         <p className="text-center text-sm text-muted-foreground">
           Don't have an account?{" "}

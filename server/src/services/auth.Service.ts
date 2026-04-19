@@ -71,6 +71,14 @@ export class AuthService implements IAuthService {
       (await this._authRepo.findOne({ username: identifier }));
     if (!user) throwError(MESSAGES.AUTH.INVALID_CREDENTIALS);
 
+    if ((user.role ?? "") === "parent") {
+      throwError("Parents sign in with OTP in the parent app.", StatusCode.FORBIDDEN);
+    }
+
+    if (!user.password) {
+      throwError(MESSAGES.AUTH.INVALID_CREDENTIALS);
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) throwError(MESSAGES.AUTH.INVALID_CREDENTIALS);
 

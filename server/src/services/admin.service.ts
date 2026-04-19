@@ -6,6 +6,10 @@ import { TYPES } from "../core/types";
 import {
   AdminDashboardChartsDTO,
   AdminDashboardDTO,
+  AdminLogsDTO,
+  AdminPlatformMetricsDTO,
+  AdminRevenueDTO,
+  AdminUserRowDTO,
   BlockCenterDTO,
   UpdatePaymentStatusDTO,
   UpdateUserStatusDTO,
@@ -80,6 +84,30 @@ export class AdminService implements IAdminService {
     );
 
     return this._adminRepository.getDashboardStats();
+  }
+
+  async getPlatformMetrics(): Promise<AdminPlatformMetricsDTO> {
+    const now = new Date();
+    await this._centerRepository.updateMany(
+      {
+        subscriptionEndDate: { $lt: now },
+        subscriptionStatus: { $ne: "blocked" },
+      },
+      { subscriptionStatus: "blocked", blocked: true, blockedReason: "Subscription expired", blockedAt: now }
+    );
+    return this._adminRepository.getPlatformAnalytics();
+  }
+
+  async getRevenueAnalytics(): Promise<AdminRevenueDTO> {
+    return this._adminRepository.getRevenueSnapshot();
+  }
+
+  async listUsers(role?: string): Promise<AdminUserRowDTO[]> {
+    return this._adminRepository.listUsersForAdmin(role);
+  }
+
+  async getLogs(): Promise<AdminLogsDTO> {
+    return this._adminRepository.getAdminLogs();
   }
 
   async getDashboardCharts(): Promise<AdminDashboardChartsDTO> {

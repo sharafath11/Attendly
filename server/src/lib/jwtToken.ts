@@ -109,3 +109,16 @@ export const clearAdminTokens = (res: Response) => {
   res.clearCookie("adminRefreshToken", cookieOptions);
   logCookieSet(res, "clearAdminTokens");
 };
+
+/** Parent portal session (separate from staff `token` to avoid role conflicts). */
+export const setParentTokensInCookies = (res: Response, accessToken: string, refreshToken: string) => {
+  res.cookie("parentToken", accessToken, cookieOptions);
+  res.cookie("parentRefreshToken", refreshToken, cookieOptions);
+  logCookieSet(res, "setParentTokensInCookies");
+};
+
+export const clearParentTokens = (res: Response) => {
+  res.clearCookie("parentToken", cookieOptions);
+  res.clearCookie("parentRefreshToken", cookieOptions);
+  logCookieSet(res, "clearParentTokens");
+};

@@ -3,6 +3,10 @@ import { Request, Response } from "express";
 export interface IAdminController {
   getDashboard(req: Request, res: Response): Promise<void>;
   getDashboardCharts(req: Request, res: Response): Promise<void>;
+  getMetrics(req: Request, res: Response): Promise<void>;
+  getRevenue(req: Request, res: Response): Promise<void>;
+  listUsers(req: Request, res: Response): Promise<void>;
+  getLogs(req: Request, res: Response): Promise<void>;
   listCenters(req: Request, res: Response): Promise<void>;
   getCenterById(req: Request, res: Response): Promise<void>;
   blockCenter(req: Request, res: Response): Promise<void>;

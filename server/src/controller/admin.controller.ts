@@ -38,6 +38,43 @@ export class AdminController implements IAdminController {
     }
   }
 
+  async getMetrics(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this._adminService.getPlatformMetrics();
+      sendResponse(res, StatusCode.OK, "Platform metrics", true, result);
+    } catch (error) {
+      handleControllerError(res, error);
+    }
+  }
+
+  async getRevenue(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this._adminService.getRevenueAnalytics();
+      sendResponse(res, StatusCode.OK, "Revenue analytics", true, result);
+    } catch (error) {
+      handleControllerError(res, error);
+    }
+  }
+
+  async listUsers(req: Request, res: Response): Promise<void> {
+    try {
+      const role = typeof req.query.role === "string" ? req.query.role : undefined;
+      const result = await this._adminService.listUsers(role);
+      sendResponse(res, StatusCode.OK, "Users", true, result);
+    } catch (error) {
+      handleControllerError(res, error);
+    }
+  }
+
+  async getLogs(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this._adminService.getLogs();
+      sendResponse(res, StatusCode.OK, "Logs", true, result);
+    } catch (error) {
+      handleControllerError(res, error);
+    }
+  }
+
   async listCenters(req: Request, res: Response): Promise<void> {
     try {
       const result = await this._adminService.listCenters();

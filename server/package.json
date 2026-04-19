@@ -26,6 +26,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.1",
     "nodemailer": "^7.0.12",
+    "razorpay": "^2.9.6",
     "reflect-metadata": "^0.2.2",
     "tsyringe": "^4.10.0"
   },

@@ -70,6 +70,16 @@ import { DashboardController } from "../../controller/dashboard.controller";
 import { IDashboardController } from "../interfaces/controllers/IDashboardController";
 import { DashboardService } from "../../services/dashboard.service";
 import { IDashboardService } from "../interfaces/services/IDashboardService";
+import { ParentAuthService } from "../../services/parentAuth.service";
+import { ParentPortalService } from "../../services/parentPortal.service";
+import { NotificationOrchestratorService } from "../../services/notificationOrchestrator.service";
+import { ParentAuthController } from "../../controller/parentAuth.controller";
+import { ParentPortalController } from "../../controller/parentPortal.controller";
+import { NotificationController } from "../../controller/notification.controller";
+import { AutomationController } from "../../controller/automation.controller";
+import { ActivityLogController } from "../../controller/activityLog.controller";
+import { PaymentService } from "../../services/payment.service";
+import { PaymentController } from "../../controller/payment.controller";
 
 container.registerSingleton<IAuthService>(TYPES.IAuthServices, AuthService);
 container.registerSingleton<IAuthController>(TYPES.IAuthController, AuthController);
@@ -117,5 +127,17 @@ container.registerSingleton<ICenterController>(TYPES.ICenterController, CenterCo
 
 container.registerSingleton<IDashboardService>(TYPES.IDashboardService, DashboardService);
 container.registerSingleton<IDashboardController>(TYPES.IDashboardController, DashboardController);
+
+container.registerSingleton(ParentAuthService, ParentAuthService);
+container.registerSingleton(ParentPortalService, ParentPortalService);
+container.registerSingleton(NotificationOrchestratorService, NotificationOrchestratorService);
+container.registerSingleton(ParentAuthController, ParentAuthController);
+container.registerSingleton(ParentPortalController, ParentPortalController);
+container.registerSingleton(NotificationController, NotificationController);
+container.registerSingleton(AutomationController, AutomationController);
+container.registerSingleton(ActivityLogController, ActivityLogController);
+
+container.registerSingleton(PaymentService, PaymentService);
+container.registerSingleton(PaymentController, PaymentController);
 
 export { container };

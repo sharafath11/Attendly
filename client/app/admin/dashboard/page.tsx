@@ -1,7 +1,7 @@
 "use client";
 
-import { useAdminDashboard, useAdminDashboardCharts } from "@/hooks/useAdmin";
-import { AdminCharts, AdminDashboard } from "@/types/admin/adminTypes";
+import { useAdminDashboard, useAdminDashboardCharts, useAdminMetrics } from "@/hooks/useAdmin";
+import { AdminCharts, AdminDashboard, AdminPlatformMetrics } from "@/types/admin/adminTypes";
 import {
   Bar,
   BarChart,
@@ -18,8 +18,10 @@ import { exportToCsv } from "@/utils/exportToCsv";
 export default function AdminDashboardPage() {
   const { data: dashboardRes } = useAdminDashboard();
   const { data: chartsRes } = useAdminDashboardCharts();
+  const { data: metricsRes } = useAdminMetrics();
 
   const dashboard = (dashboardRes?.data ?? {}) as AdminDashboard;
+  const metrics = (metricsRes?.data ?? {}) as Partial<AdminPlatformMetrics>;
   const charts = (chartsRes?.data ?? { revenueByMonth: [], centersGrowth: [] }) as AdminCharts;
 
   const cards = [
@@ -29,7 +31,27 @@ export default function AdminDashboardPage() {
     { label: "Pending Centers", value: dashboard.pendingCenters ?? 0 },
     { label: "Total Students", value: dashboard.totalStudents ?? 0 },
     { label: "Total Teachers", value: dashboard.totalTeachers ?? 0 },
-    { label: "Monthly Revenue", value: dashboard.monthlyRevenue ?? 0 },
+    { label: "Monthly Revenue (MRR sum)", value: dashboard.monthlyRevenue ?? 0 },
+  ];
+
+  const usageCards = [
+    { label: "Parents", value: metrics.totalParents ?? "—" },
+    { label: "Center owners", value: metrics.totalCenterOwners ?? "—" },
+    { label: "WhatsApp sent (30d)", value: metrics.whatsappSent30d ?? "—" },
+    { label: "WhatsApp failed (30d)", value: metrics.whatsappFailed30d ?? "—" },
+    { label: "Fee reminders (30d)", value: metrics.feeRemindersSent30d ?? "—" },
+    { label: "Attendance marks (30d)", value: metrics.attendanceMarks30d ?? "—" },
+    { label: "DAU (approx.)", value: metrics.dailyActiveUsersApprox ?? "—" },
+    {
+      label: "Razorpay via platform (₹)",
+      value:
+        metrics.platformPaymentsCollectedInr != null
+          ? Math.round(metrics.platformPaymentsCollectedInr)
+          : "—",
+    },
+    { label: "Inactive centers (7d)", value: metrics.inactiveCenters7d ?? "—" },
+    { label: "At-risk (approx.)", value: metrics.atRiskCentersApprox ?? "—" },
+    { label: "Notification failures (24h)", value: metrics.notificationFailures24h ?? "—" },
   ];
 
   const handleDownloadCsv = () => {
@@ -62,6 +84,35 @@ export default function AdminDashboardPage() {
           </div>
         ))}
       </div>
+
+      <div>
+        <h2 className="text-sm font-semibold text-foreground">Usage & messaging</h2>
+        <p className="text-xs text-muted-foreground">From /api/admin/metrics</p>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {usageCards.map((card) => (
+            <div key={card.label} className="rounded-xl border border-border bg-card p-4 shadow-sm">
+              <p className="text-xs uppercase text-muted-foreground">{card.label}</p>
+              <p className="mt-2 text-lg font-semibold sm:text-xl">{card.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {metrics.topCentersByPlatformPayments && metrics.topCentersByPlatformPayments.length > 0 ? (
+        <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+          <h2 className="text-sm font-semibold">Top centers by Razorpay volume</h2>
+          <ul className="mt-2 space-y-1 text-sm">
+            {metrics.topCentersByPlatformPayments.map((c) => (
+              <li key={c.centerId} className="flex justify-between gap-2 border-b border-border/60 py-2 last:border-0">
+                <span className="font-medium">{c.centerName}</span>
+                <span className="tabular-nums text-muted-foreground">
+                  ₹{Math.round(c.totalInr).toLocaleString("en-IN")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-4">

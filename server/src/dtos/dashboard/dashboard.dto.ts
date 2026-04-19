@@ -6,6 +6,21 @@ export interface DashboardSummaryDTO {
   totalBatches: number;
 }
 
+export interface DashboardInsightsDTO {
+  /** Fee reminder notifications sent (last 30 days) */
+  remindersSent30d: number;
+  /** Sum of paid fee amounts current calendar month */
+  feesCollectedMonthInr: number;
+  /** % present among marked sessions last 30 days */
+  attendanceRateLast30d: number;
+  /** Distinct students with at least one pending/overdue fee row */
+  unpaidStudentsCount: number;
+  /** True when batches run today (IST) but not all students have an attendance row yet */
+  attendanceNotFullyMarkedToday: boolean;
+  /** Ready-to-show lines for the owner dashboard */
+  insightLines: string[];
+}
+
 export interface DashboardAttendancePointDTO {
   day: string;
   present: number;
@@ -38,6 +53,7 @@ export interface DashboardUpcomingClassDTO {
 
 export interface DashboardDTO {
   summary: DashboardSummaryDTO;
+  insights: DashboardInsightsDTO;
   attendanceChart: DashboardAttendancePointDTO[];
   attendanceMonthlyChart: DashboardAttendancePointDTO[];
   feeChart: DashboardFeePointDTO[];

@@ -1,6 +1,10 @@
 import {
   AdminDashboardChartsDTO,
   AdminDashboardDTO,
+  AdminLogsDTO,
+  AdminPlatformMetricsDTO,
+  AdminRevenueDTO,
+  AdminUserRowDTO,
   BlockCenterDTO,
   UpdatePaymentStatusDTO,
   UpdateUserStatusDTO,
@@ -10,6 +14,10 @@ import { CenterResponseDTO } from "../../../dtos/centers/centers.dto";
 export interface IAdminService {
   getDashboard(): Promise<AdminDashboardDTO>;
   getDashboardCharts(): Promise<AdminDashboardChartsDTO>;
+  getPlatformMetrics(): Promise<AdminPlatformMetricsDTO>;
+  getRevenueAnalytics(): Promise<AdminRevenueDTO>;
+  listUsers(role?: string): Promise<AdminUserRowDTO[]>;
+  getLogs(): Promise<AdminLogsDTO>;
   listCenters(): Promise<(CenterResponseDTO & { owner?: { id: string; name: string; email: string } })[]>;
   getCenterById(centerId: string): Promise<CenterResponseDTO & { owner?: { id: string; name: string; email: string }; totalStudents: number; totalTeachers: number }>;
   blockCenter(centerId: string, payload: BlockCenterDTO): Promise<CenterResponseDTO>;

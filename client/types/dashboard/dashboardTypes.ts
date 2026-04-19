@@ -6,6 +6,15 @@ export type DashboardSummary = {
   totalBatches: number;
 };
 
+export type DashboardInsights = {
+  remindersSent30d: number;
+  feesCollectedMonthInr: number;
+  attendanceRateLast30d: number;
+  unpaidStudentsCount: number;
+  attendanceNotFullyMarkedToday: boolean;
+  insightLines: string[];
+};
+
 export type DashboardAttendancePoint = {
   day: string;
   present: number;
@@ -38,6 +47,7 @@ export type DashboardUpcomingClass = {
 
 export type DashboardData = {
   summary: DashboardSummary;
+  insights: DashboardInsights;
   attendanceChart: DashboardAttendancePoint[];
   attendanceMonthlyChart: DashboardAttendancePoint[];
   feeChart: DashboardFeePoint[];

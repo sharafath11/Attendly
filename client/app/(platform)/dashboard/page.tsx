@@ -1,25 +1,23 @@
 "use client";
 
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { useMemo } from "react";
 import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { Users, CalendarCheck2, WalletCards, Layers, Download } from "lucide-react";
-import DashboardCard from "@/components/dashboard/DashboardCard";
-import DataTable from "@/components/dashboard/DataTable";
-import ChartCard from "@/components/dashboard/ChartCard";
-import StatusBadge from "@/components/dashboard/StatusBadge";
-import { exportToCsv } from "@/utils/exportToCsv";
+  ArrowRight,
+  CalendarCheck2,
+  IndianRupee,
+  MessageCircle,
+  Sparkles,
+  TrendingUp,
+  Users,
+  WalletCards,
+} from "lucide-react";
 import { useDashboard } from "@/hooks/useDashboard";
+import { useBatches } from "@/hooks/useBatches";
+import { useLowAttendanceStudents } from "@/hooks/useAttendance";
 import type { DashboardData } from "@/types/dashboard/dashboardTypes";
-import { useMemo, useState } from "react";
+import EmptyState from "@/components/product/EmptyState";
 
 const emptyDashboard: DashboardData = {
   summary: {
@@ -28,6 +26,14 @@ const emptyDashboard: DashboardData = {
     pendingFees: 0,
     pendingFeesAmount: 0,
     totalBatches: 0,
+  },
+  insights: {
+    remindersSent30d: 0,
+    feesCollectedMonthInr: 0,
+    attendanceRateLast30d: 0,
+    unpaidStudentsCount: 0,
+    attendanceNotFullyMarkedToday: false,
+    insightLines: [],
   },
   attendanceChart: [],
   attendanceMonthlyChart: [],
@@ -44,250 +50,284 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-const formatDate = (value: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
-};
+const formatToday = () =>
+  new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short" });
 
 export default function DashboardPage() {
-  const { data: dashboardRes } = useDashboard();
+  const { data: dashboardRes, isLoading } = useDashboard();
   const dashboard = dashboardRes?.data ?? emptyDashboard;
-  const [attendanceView, setAttendanceView] = useState<"weekly" | "monthly">("weekly");
+  const { data: batchesRes } = useBatches();
+  const firstBatchId = batchesRes?.data?.batches?.[0]?.id;
+  const { data: lowAttendanceRes } = useLowAttendanceStudents(firstBatchId);
+  const lowAttendance = (lowAttendanceRes?.data ?? []).slice(0, 4);
 
   const attendanceRate = dashboard.summary.totalStudents
     ? Math.round((dashboard.summary.todayAttendance / dashboard.summary.totalStudents) * 100)
     : 0;
 
-  const recentPayments = dashboard.recentPayments.map((payment) => ({
-    ...payment,
-    amount: formatCurrency(payment.amount),
-    date: formatDate(payment.date),
-  }));
+  const monthlyRevenue = useMemo(() => {
+    if (dashboard.insights?.feesCollectedMonthInr != null) {
+      return dashboard.insights.feesCollectedMonthInr;
+    }
+    const fc = dashboard.feeChart;
+    if (!fc.length) return 0;
+    return fc[fc.length - 1].amount;
+  }, [dashboard.feeChart, dashboard.insights?.feesCollectedMonthInr]);
 
-  const attendanceChartData = attendanceView === "weekly"
-    ? dashboard.attendanceChart
-    : dashboard.attendanceMonthlyChart;
+  const hasStudents = dashboard.summary.totalStudents > 0;
 
-  const attendanceHasData = useMemo(
-    () => attendanceChartData.some((point) => point.present > 0),
-    [attendanceChartData]
-  );
-
-  const feeHasData = useMemo(
-    () => dashboard.feeChart.some((point) => point.amount > 0),
-    [dashboard.feeChart]
-  );
-
-  const handleDownloadDashboardCsv = () => {
-    const summaryRows = [
-      {
-        Metric: "Total Students",
-        Value: dashboard.summary.totalStudents,
-      },
-      {
-        Metric: "Today Attendance",
-        Value: dashboard.summary.todayAttendance,
-      },
-      {
-        Metric: "Pending Fees",
-        Value: dashboard.summary.pendingFees,
-      },
-      {
-        Metric: "Pending Fees Amount",
-        Value: formatCurrency(dashboard.summary.pendingFeesAmount),
-      },
-      {
-        Metric: "Total Batches",
-        Value: dashboard.summary.totalBatches,
-      },
-    ];
-
-    exportToCsv("dashboard-summary", summaryRows);
-  };
+  if (isLoading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="h-8 w-48 rounded-lg bg-muted" />
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="h-28 rounded-2xl bg-muted" />
+          <div className="h-28 rounded-2xl bg-muted" />
+          <div className="h-28 rounded-2xl bg-muted" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground sm:text-2xl lg:text-3xl">Dashboard</h1>
-          <p className="text-sm text-muted-foreground sm:text-base">
-            Welcome back! Here is what is happening with your batches today.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={handleDownloadDashboardCsv}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm hover:bg-secondary sm:w-auto"
-        >
-          <Download className="h-3 w-3" />
-          Download Excel (CSV)
-        </button>
+    <div className="space-y-8 pb-4">
+      <div>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{formatToday()}</p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          Your center at a glance
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Here’s what to do next — tap a card or a quick action below.
+        </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <DashboardCard
-          title="Total Students"
-          value={dashboard.summary.totalStudents}
-          icon={<Users className="h-5 w-5" />}
-          trend={`${dashboard.summary.totalStudents} enrolled`}
-        />
-        <DashboardCard
-          title="Today&apos;s Attendance"
-          value={dashboard.summary.todayAttendance}
-          icon={<CalendarCheck2 className="h-5 w-5" />}
-          trend={dashboard.summary.totalStudents ? `${attendanceRate}% present today` : "No attendance yet"}
-        />
-        <DashboardCard
-          title="Pending Fees"
-          value={dashboard.summary.pendingFees}
-          icon={<WalletCards className="h-5 w-5" />}
-          trend={
-            dashboard.summary.pendingFeesAmount
-              ? `${formatCurrency(dashboard.summary.pendingFeesAmount)} pending`
-              : dashboard.summary.pendingFees
-                ? "Pending this month"
-                : "All clear"
-          }
-        />
-        <DashboardCard
-          title="Total Batches"
-          value={dashboard.summary.totalBatches}
-          icon={<Layers className="h-5 w-5" />}
-          trend={dashboard.summary.totalBatches ? "Active batches" : "No batches yet"}
-        />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ChartCard
-          title={attendanceView === "weekly" ? "Weekly Attendance" : "Monthly Attendance"}
-          subtitle={attendanceView === "weekly" ? "Students present per day" : "Students present per month"}
-        >
-          <div className="flex items-center justify-between gap-2 pb-2">
-            <span className="inline-flex items-center rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {attendanceView}
-            </span>
-            <button
-              type="button"
-              onClick={() => setAttendanceView("weekly")}
-              className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                attendanceView === "weekly"
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border text-muted-foreground"
-              }`}
-            >
-              Weekly
-            </button>
-            <button
-              type="button"
-              onClick={() => setAttendanceView("monthly")}
-              className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                attendanceView === "monthly"
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border text-muted-foreground"
-              }`}
-            >
-              Monthly
-            </button>
+      {dashboard.insights?.insightLines && dashboard.insights.insightLines.length > 0 ? (
+        <section aria-label="Smart alerts" className="rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm">
+          <div className="mb-2 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold text-foreground">Smart alerts</h2>
           </div>
-          {attendanceHasData ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={attendanceChartData} margin={{ left: -20, right: 10 }}>
-              <defs>
-                <linearGradient id="attendanceGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#6366F1" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" opacity={0.2} />
-              <XAxis dataKey="day" tickLine={false} axisLine={false} />
-              <YAxis tickLine={false} axisLine={false} />
-              <Tooltip cursor={{ stroke: "#6366F1", strokeWidth: 1 }} />
-              <Area
-                type="monotone"
-                dataKey="present"
-                stroke="#6366F1"
-                fillOpacity={1}
-                fill="url(#attendanceGradient)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              No attendance data yet.
-            </div>
-          )}
-        </ChartCard>
+          <ul className="space-y-2 text-sm text-foreground">
+            {dashboard.insights.insightLines.map((line, idx) => (
+              <li key={`${idx}-${line}`} className="flex gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
-        <ChartCard title="Monthly Fee Collections" subtitle="Last 6 months">
-          {feeHasData ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dashboard.feeChart} margin={{ left: -20, right: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" opacity={0.2} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} />
-                <Tooltip cursor={{ fill: "#6366F1", opacity: 0.1 }} />
-                <Bar dataKey="amount" fill="#22C55E" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              No fee data yet.
-            </div>
-          )}
-        </ChartCard>
-      </div>
+      {!hasStudents ? (
+        <EmptyState
+          icon={Users}
+          title="Add your first students"
+          description="Once students are in, you’ll see attendance, fees, and reminders here without digging through menus."
+          actionLabel="Open setup guide"
+          onAction={() => {
+            window.location.href = "/onboarding";
+          }}
+        />
+      ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-base font-semibold text-foreground sm:text-lg">Recent Attendance</h2>
-            <p className="text-xs text-muted-foreground sm:text-sm">Latest marked records</p>
-          </div>
-          <DataTable
-            columns={[
-              { key: "student", header: "Student" },
-              { key: "batch", header: "Batch" },
-              {
-                key: "status",
-                header: "Status",
-                render: (row) => <StatusBadge status={row.status as "Present" | "Absent" | "Leave"} />,
-              },
-            ]}
-            data={dashboard.recentAttendance}
+      <section aria-label="Today">
+        <h2 className="sr-only">Key numbers</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <MetricCard
+            href="/attendance"
+            label="Today's attendance"
+            value={String(dashboard.summary.todayAttendance)}
+            sub={
+              dashboard.insights?.attendanceNotFullyMarkedToday
+                ? "Not marked yet for all classes"
+                : dashboard.summary.totalStudents
+                  ? `${attendanceRate}% of roster`
+                  : "No one enrolled yet"
+            }
+            icon={<CalendarCheck2 className="h-5 w-5" />}
+            accent="bg-primary/10 text-primary"
           />
-
-          <div>
-            <h2 className="text-base font-semibold text-foreground sm:text-lg">Recent Fee Payments</h2>
-            <p className="text-xs text-muted-foreground sm:text-sm">Latest successful transactions</p>
-          </div>
-          <DataTable
-            columns={[
-              { key: "student", header: "Student" },
-              { key: "amount", header: "Amount" },
-              { key: "date", header: "Date" },
-            ]}
-            data={recentPayments}
+          <MetricCard
+            href="/fees"
+            label="Pending fees"
+            value={String(dashboard.summary.pendingFees)}
+            sub={
+              dashboard.summary.pendingFeesAmount
+                ? `${formatCurrency(dashboard.summary.pendingFeesAmount)} not collected yet`
+                : "All caught up"
+            }
+            icon={<WalletCards className="h-5 w-5" />}
+            accent="bg-amber-500/10 text-amber-700 dark:text-amber-300"
+          />
+          <MetricCard
+            href="/fees"
+            label="This month's collection"
+            value={monthlyRevenue ? formatCurrency(monthlyRevenue) : "—"}
+            sub={
+              monthlyRevenue
+                ? `${formatCurrency(monthlyRevenue)} collected`
+                : "Record fees to see totals"
+            }
+            icon={<TrendingUp className="h-5 w-5" />}
+            accent="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
           />
         </div>
+      </section>
 
-        <div className="rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5">
-          <h2 className="text-base font-semibold text-foreground sm:text-lg">Upcoming Classes</h2>
-          <p className="text-xs text-muted-foreground sm:text-sm">Next 48 hours</p>
-          <div className="mt-4 space-y-4">
-            {dashboard.upcomingClasses.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No upcoming classes scheduled.</p>
-            ) : (
-              dashboard.upcomingClasses.map((session) => (
-                <div key={session.id} className="rounded-lg border border-border p-3">
-                  <p className="text-sm font-medium text-foreground">{session.name}</p>
-                  <p className="text-xs text-muted-foreground">{session.time}</p>
-                </div>
-              ))
-            )}
+      <section aria-label="Quick actions">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">Quick actions</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Link
+            href="/attendance"
+            className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold shadow-sm transition hover:border-primary/40 hover:bg-muted/50"
+          >
+            <CalendarCheck2 className="h-4 w-4 text-primary" />
+            Mark attendance
+          </Link>
+          <Link
+            href="/messages"
+            className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold shadow-sm transition hover:border-primary/40 hover:bg-muted/50"
+          >
+            <MessageCircle className="h-4 w-4 text-primary" />
+            Send reminder
+          </Link>
+          <Link
+            href="/students"
+            className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold shadow-sm transition hover:border-primary/40 hover:bg-muted/50"
+          >
+            <Users className="h-4 w-4 text-primary" />
+            Add student
+          </Link>
+          <Link
+            href="/fees"
+            className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold shadow-sm transition hover:border-primary/40 hover:bg-muted/50"
+          >
+            <IndianRupee className="h-4 w-4 text-primary" />
+            Collect payment
+          </Link>
+        </div>
+      </section>
+
+      <section aria-label="Insights">
+        <div className="mb-3 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-semibold text-foreground">More insights</h2>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <p className="text-sm font-medium text-foreground">30-day pulse</p>
+            <p className="text-xs text-muted-foreground">Automation & consistency</p>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted-foreground">Attendance rate</dt>
+                <dd className="font-semibold tabular-nums text-foreground">
+                  {dashboard.insights?.attendanceRateLast30d ?? 0}%
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-muted-foreground">Fee reminders sent</dt>
+                <dd className="font-semibold tabular-nums text-foreground">
+                  {dashboard.insights?.remindersSent30d ?? 0}
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-medium text-foreground">Low attendance</p>
+                <p className="text-xs text-muted-foreground">Needs a quick call {firstBatchId ? "" : "(add a batch first)"}</p>
+              </div>
+              <Link href="/attendance" className="text-xs font-medium text-primary hover:underline">
+                View
+              </Link>
+            </div>
+            <ul className="mt-3 space-y-2">
+              {lowAttendance.length === 0 ? (
+                <li className="text-sm text-muted-foreground">No one is below 75% right now. Nice work.</li>
+              ) : (
+                lowAttendance.map((s) => (
+                  <li
+                    key={s.studentId}
+                    className="flex items-center justify-between rounded-xl border border-border/80 px-3 py-2 text-sm"
+                  >
+                    <span className="font-medium text-foreground">{s.studentName}</span>
+                    <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-xs font-semibold text-rose-600 dark:text-rose-400">
+                      {s.attendancePercentage}%
+                    </span>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-medium text-foreground">Recent payments</p>
+                <p className="text-xs text-muted-foreground">Last few collections</p>
+              </div>
+              <Link href="/fees" className="text-xs font-medium text-primary hover:underline">
+                All fees
+              </Link>
+            </div>
+            <ul className="mt-3 space-y-2">
+              {dashboard.recentPayments.length === 0 ? (
+                <li className="text-sm text-muted-foreground">No payments recorded yet.</li>
+              ) : (
+                dashboard.recentPayments.slice(0, 4).map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex items-center justify-between rounded-xl border border-border/80 px-3 py-2 text-sm"
+                  >
+                    <span className="truncate font-medium text-foreground">{p.student}</span>
+                    <span className="shrink-0 tabular-nums text-muted-foreground">{formatCurrency(p.amount)}</span>
+                  </li>
+                ))
+              )}
+            </ul>
           </div>
         </div>
+      </section>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-3 text-sm">
+        <span className="text-muted-foreground">Want the full analytics view?</span>
+        <Link
+          href="/reports"
+          className="inline-flex items-center justify-center rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-card-foreground transition-colors hover:bg-secondary"
+        >
+          Open reports
+          <ArrowRight className="ml-1 h-3 w-3" />
+        </Link>
       </div>
     </div>
+  );
+}
+
+function MetricCard({
+  href,
+  label,
+  value,
+  sub,
+  icon,
+  accent,
+}: {
+  href: string;
+  label: string;
+  value: string;
+  sub: string;
+  icon: ReactNode;
+  accent: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex flex-col rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:border-primary/30 hover:shadow-md"
+    >
+      <div className={`mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl ${accent}`}>{icon}</div>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{value}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
+    </Link>
   );
 }

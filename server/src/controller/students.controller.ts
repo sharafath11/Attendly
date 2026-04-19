@@ -23,7 +23,7 @@ export class StudentsController implements IStudentsController {
 
   async createStudent(req: Request, res: Response): Promise<void> {
     try {
-      const { centerId, userId } = req as AuthenticatedRequest;
+      const { centerId, userId, authUserId } = req as AuthenticatedRequest;
       const scopeId = centerId ?? userId;
       if (!scopeId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
@@ -32,7 +32,7 @@ export class StudentsController implements IStudentsController {
       const payload = req.body as CreateStudentDTO;
       validateCreateStudent(payload);
 
-      const student = await this._studentsService.createStudent(scopeId, payload);
+      const student = await this._studentsService.createStudent(scopeId, payload, authUserId);
       sendResponse(res, StatusCode.CREATED, "Student created successfully", true, student);
     } catch (error) {
       handleControllerError(res, error);
@@ -92,14 +92,14 @@ export class StudentsController implements IStudentsController {
 
   async deleteStudent(req: Request, res: Response): Promise<void> {
     try {
-      const { centerId, userId } = req as AuthenticatedRequest;
+      const { centerId, userId, authUserId } = req as AuthenticatedRequest;
       const scopeId = centerId ?? userId;
       if (!scopeId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, MESSAGES.AUTH.AUTH_REQUIRED, false);
       }
 
       const studentId = getStringParam(req.params.id);
-      await this._studentsService.deleteStudent(scopeId, studentId as string);
+      await this._studentsService.deleteStudent(scopeId, studentId as string, authUserId);
       sendResponse(res, StatusCode.OK, "Student deleted successfully", true);
     } catch (error) {
       handleControllerError(res, error);

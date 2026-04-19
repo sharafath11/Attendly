@@ -13,7 +13,9 @@ import { AttendanceModel } from "../models/attendance.model";
 import { BatchModel } from "../models/batches.model";
 import { FeeModel } from "../models/fees.model";
 import { StudentModel } from "../models/students.model";
+import { NotificationModel } from "../models/notification.model";
 import { MESSAGES } from "../const/messages";
+import { istDayBoundsUtc, istMonthBoundsUtc, istMonthYear, istWeekdayShort } from "../utils/ist.util";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
@@ -87,13 +89,9 @@ export class DashboardService implements IDashboardService {
     try {
       const centerObjectId = new mongoose.Types.ObjectId(centerId);
       const now = new Date();
-      const startOfToday = new Date(now);
-      startOfToday.setHours(0, 0, 0, 0);
-      const endOfToday = new Date(now);
-      endOfToday.setHours(23, 59, 59, 999);
-
-      const currentMonth = now.getMonth() + 1;
-      const currentYear = now.getFullYear();
+      const { start: startIst, end: endIst } = istDayBoundsUtc();
+      const { start: monthStartIst, end: monthEndIst } = istMonthBoundsUtc();
+      const { month: currentMonth, year: currentYear } = istMonthYear();
 
       const pendingMatch = {
         $and: [
@@ -137,7 +135,7 @@ export class DashboardService implements IDashboardService {
         AttendanceModel.countDocuments({
           centerId: centerObjectId,
           status: "present",
-          date: { $gte: startOfToday, $lte: endOfToday },
+          date: { $gte: startIst, $lte: endIst },
         }),
         FeeModel.countDocuments(pendingMatch),
         FeeModel.aggregate([
@@ -381,6 +379,91 @@ export class DashboardService implements IDashboardService {
           time: item.time,
         }));
 
+      const thirtyDaysAgo = new Date(now);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const [remindersSent30d, feesCollectedAgg, attAgg] = await Promise.all([
+        NotificationModel.countDocuments({
+          centerId: centerObjectId,
+          type: "fee_reminder",
+          status: "sent",
+          createdAt: { $gte: thirtyDaysAgo },
+        }),
+        FeeModel.aggregate([
+          {
+            $match: {
+              $or: [{ centerId: centerObjectId }, { userId: centerObjectId }],
+              status: "Paid",
+              paidDate: {
+                $gte: monthStartIst,
+                $lte: monthEndIst,
+              },
+            },
+          },
+          { $group: { _id: null, total: { $sum: "$amount" } } },
+        ]),
+        AttendanceModel.aggregate([
+          {
+            $match: {
+              centerId: centerObjectId,
+              date: { $gte: thirtyDaysAgo },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              total: { $sum: 1 },
+              present: {
+                $sum: { $cond: [{ $eq: ["$status", "present"] }, 1, 0] },
+              },
+            },
+          },
+        ]),
+      ]);
+
+      const feesCollectedMonthInr = feesCollectedAgg[0]?.total ?? 0;
+      const attTotal = attAgg[0]?.total ?? 0;
+      const attPresent = attAgg[0]?.present ?? 0;
+      const attendanceRateLast30d = attTotal ? Math.round((attPresent / attTotal) * 100) : 0;
+
+      const dow = istWeekdayShort();
+      const batchesToday = await BatchModel.find({
+        $or: [{ centerId: centerObjectId }, { userId: centerObjectId }],
+        days: dow,
+      })
+        .select("_id")
+        .lean()
+        .exec();
+      const batchIds = batchesToday.map((b) => b._id);
+      let expectedToday = 0;
+      if (batchIds.length) {
+        expectedToday = await StudentModel.countDocuments({
+          $or: [{ centerId: centerObjectId }, { userId: centerObjectId }],
+          isDeleted: false,
+          batchId: { $in: batchIds },
+        });
+      }
+      const markedIds = await AttendanceModel.distinct("studentId", {
+        centerId: centerObjectId,
+        date: { $gte: startIst, $lte: endIst },
+      });
+      const attendanceNotFullyMarkedToday =
+        expectedToday > 0 && markedIds.length < expectedToday;
+
+      const unpaidStudentIds = await FeeModel.distinct("studentId", pendingMatch);
+      const unpaidStudentsCount = unpaidStudentIds.filter((id) => id != null).length;
+
+      const insightLines: string[] = [];
+      if (unpaidStudentsCount > 0) {
+        insightLines.push(`${unpaidStudentsCount} students haven’t paid yet — send reminders`);
+      }
+      if (attendanceNotFullyMarkedToday) {
+        insightLines.push("Attendance not marked today");
+      }
+      if (feesCollectedMonthInr > 0) {
+        insightLines.push(`You collected ₹${Math.round(feesCollectedMonthInr)} this month`);
+      }
+
       return {
         summary: {
           totalStudents,
@@ -388,6 +471,14 @@ export class DashboardService implements IDashboardService {
           pendingFees,
           pendingFeesAmount,
           totalBatches,
+        },
+        insights: {
+          remindersSent30d,
+          feesCollectedMonthInr,
+          attendanceRateLast30d,
+          unpaidStudentsCount,
+          attendanceNotFullyMarkedToday,
+          insightLines,
         },
         attendanceChart,
         attendanceMonthlyChart,

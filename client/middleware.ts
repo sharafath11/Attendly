@@ -22,6 +22,7 @@ export function middleware(request: NextRequest) {
   const isDashboard = pathname.startsWith("/dashboard")
   const isAdmin = pathname.startsWith("/admin")
   const isAdminLogin = pathname === "/admin/login"
+  const isParent = pathname.startsWith("/parent")
 
   if (AUTH_DEBUG) {
     console.log("[AuthDebug] middleware", {
@@ -34,7 +35,7 @@ export function middleware(request: NextRequest) {
   }
 
   if (isAuthenticated || isAdminAuthenticated) {
-    if (isAuthPage || isPublicPage) {
+    if ((isAuthPage || isPublicPage) && !isParent) {
       return NextResponse.redirect(
         new URL("/dashboard", request.url)
       )
@@ -62,5 +63,6 @@ export const config = {
     "/dashboard/:path*",
     "/admin/:path*",
     "/blocked",
+    "/parent/:path*",
   ],
 }

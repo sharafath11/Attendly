@@ -83,6 +83,28 @@ axiosInstance.interceptors.response.use(
     const isAdminRefresh = requestUrl.includes("/admin/auth/refresh-token");
     const isAdminRequest = requestUrl.startsWith("/admin");
     const isAdminLogin = requestUrl.includes("/admin/auth/login");
+    const isParentRequest = requestUrl.includes("/parent/");
+    const isParentRefresh = requestUrl.includes("/parent/auth/refresh-token");
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      isParentRequest &&
+      !isParentRefresh &&
+      !isAuthRefresh &&
+      !isAdminRequest
+    ) {
+      originalRequest._retry = true;
+      try {
+        await axiosInstance.post("/parent/auth/refresh-token");
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        if (typeof window !== "undefined") {
+          window.location.href = "/parent/login";
+        }
+        return Promise.reject(refreshError);
+      }
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthRefresh && !isAdminRequest) {
       console.log("[Axios Interceptor] 401 detected - initiating refresh flow");

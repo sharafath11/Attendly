@@ -7,6 +7,7 @@ import { TYPES } from "../core/types";
 import { CreateStudentDTO, StudentQueryDTO, UpdateStudentDTO } from "../dtos/students/students.dto";
 import { StudentResponseDTO, StudentsListResponseDTO } from "../dtos/students/students.dto";
 import { throwError } from "../utils/response";
+import { logActivity } from "../utils/activityLog.util";
 import { MESSAGES } from "../const/messages";
 import { StatusCode } from "../enums/statusCode";
 import { IStudent } from "../models/students.model";
@@ -65,7 +66,7 @@ export class StudentsService implements IStudentsService {
     }
   }
 
-  async createStudent(centerId: string, payload: CreateStudentDTO): Promise<StudentResponseDTO> {
+  async createStudent(centerId: string, payload: CreateStudentDTO, actorUserId?: string): Promise<StudentResponseDTO> {
     await this.ensureActiveSubscription(centerId, "Subscription inactive. Student creation disabled.");
     const center = await this._centerRepository.findById(centerId);
     const studentLimit = center?.studentLimit ?? 150;
@@ -90,6 +91,15 @@ export class StudentsService implements IStudentsService {
       centerId: new mongoose.Types.ObjectId(centerId),
       userId: new mongoose.Types.ObjectId(centerId),
     } as Partial<IStudent>);
+
+    await logActivity({
+      centerId,
+      actorUserId: actorUserId ?? centerId,
+      action: "student_created",
+      entityType: "student",
+      entityId: student._id.toString(),
+      summary: `Student created: ${payload.name}`,
+    });
 
     return this.mapStudent(student);
   }
@@ -215,7 +225,7 @@ export class StudentsService implements IStudentsService {
     return this.mapStudent(updated);
   }
 
-  async deleteStudent(centerId: string, id: string): Promise<void> {
+  async deleteStudent(centerId: string, id: string, actorUserId?: string): Promise<void> {
     await this.ensureActiveSubscription(centerId, "Subscription inactive. Student deletion disabled.");
     const existing = await this._studentsRepository.findById(id);
     if (!existing || existing.isDeleted) {
@@ -233,5 +243,14 @@ export class StudentsService implements IStudentsService {
     if (!deleted) {
       throwError(MESSAGES.COMMON.SERVER_ERROR, StatusCode.INTERNAL_SERVER_ERROR);
     }
+
+    await logActivity({
+      centerId,
+      actorUserId: actorUserId ?? centerId,
+      action: "student_deleted",
+      entityType: "student",
+      entityId: id,
+      summary: `Student removed: ${existing.name}`,
+    });
   }
 }

@@ -6,15 +6,17 @@ export interface IUser extends Document {
   name?: string;
   email: string;
   isVerified: boolean;
-  password: string;
+  password?: string;
   authProvider?: "local" | "google";
   phone?: string;
   subjects?: string[];
   salary?: number;
-  role?: "center_owner" | "teacher" | "super_admin";
+  role?: "center_owner" | "teacher" | "super_admin" | "parent";
   centerId?: Types.ObjectId | string;
   position?: string;
   status?: "active" | "pending" | "disabled";
+  parentDisplayName?: string;
+  parentContactEmail?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

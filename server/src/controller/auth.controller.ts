@@ -11,7 +11,7 @@ import {
   throwError,
 } from "../utils/response";
 import { validateBodyFields } from "../utils/validateRequest";
-import { clearTokens, decodeToken, refreshAccessToken, setTokensInCookies } from "../lib/jwtToken";
+import { clearTokens, clearParentTokens, decodeToken, refreshAccessToken, setTokensInCookies } from "../lib/jwtToken";
 
 const AUTH_DEBUG = process.env.AUTH_DEBUG === "true";
 
@@ -43,6 +43,7 @@ export class AuthController implements IAuthController {
 
       const identifier = (email ?? username) as string;
       const result = await this._authServices.login(identifier, password);
+      clearParentTokens(res);
       setTokensInCookies(res,result.tocken,result.refreshToken)
       if (AUTH_DEBUG) {
         console.log("[AuthDebug] login:tokensSet", {

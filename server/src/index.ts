@@ -19,6 +19,14 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { attachCenterContext } from "./shared/middleware/centerContext.middleware";
 import { startSubscriptionExpiryJob } from "./jobs/subscriptionExpiry.job";
+import { startAutomationJobs } from "./jobs/automation.jobs";
+import { startRetentionJobs } from "./jobs/retention.jobs";
+import parentRoutes from "./routes/parent.Routes";
+import notificationsRoutes from "./routes/notifications.Routes";
+import automationSettingsRoutes from "./routes/automationSettings.Routes";
+import activityLogRoutes from "./routes/activityLog.Routes";
+import paymentRoutes from "./routes/payment.Routes";
+import "./models/parentLink.model";
 
 dotenv.config();
 const app = express();
@@ -53,6 +61,8 @@ app.use(cookieParser());
 app.use(attachCenterContext);
 connectDB();
 startSubscriptionExpiryJob();
+startAutomationJobs();
+startRetentionJobs();
 app.use("/api/auth", authRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/batches", batchRoutes);
@@ -65,8 +75,12 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/centers", centersRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/parent", parentRoutes);
+app.use("/api/notifications", notificationsRoutes);
+app.use("/api/automation", automationSettingsRoutes);
+app.use("/api/activity-logs", activityLogRoutes);
+app.use("/api/payments", paymentRoutes);
 
-// Global error handler (last middleware)
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("[error] Unhandled error:", err);
   res.status(500).json({ success: false, message: "Internal server error" });

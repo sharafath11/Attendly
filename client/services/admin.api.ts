@@ -4,6 +4,10 @@ import {
   AdminCenter,
   AdminCenterDetail,
   AdminDashboard,
+  AdminLogs,
+  AdminPlatformMetrics,
+  AdminRevenue,
+  AdminUserRow,
   ApiResponse,
   BlockCenterPayload,
   UpdatePaymentStatusPayload,
@@ -13,6 +17,13 @@ import {
 export const adminApi = {
   getDashboard: () => getRequest<ApiResponse<AdminDashboard>>("/admin/dashboard"),
   getDashboardCharts: () => getRequest<ApiResponse<AdminCharts>>("/admin/dashboard/charts"),
+  getMetrics: () => getRequest<ApiResponse<AdminPlatformMetrics>>("/admin/metrics"),
+  getRevenue: () => getRequest<ApiResponse<AdminRevenue>>("/admin/revenue"),
+  getUsers: (role?: string) =>
+    getRequest<ApiResponse<AdminUserRow[]>>(
+      role ? `/admin/users?role=${encodeURIComponent(role)}` : "/admin/users"
+    ),
+  getLogs: () => getRequest<ApiResponse<AdminLogs>>("/admin/logs"),
   getCenters: () => getRequest<ApiResponse<AdminCenter[]>>("/admin/centers"),
   getCenterById: (id: string) => getRequest<ApiResponse<AdminCenterDetail>>(`/admin/centers/${id}`),
   blockCenter: (id: string, payload: BlockCenterPayload) =>

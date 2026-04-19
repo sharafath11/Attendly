@@ -13,6 +13,10 @@ router.get(
   requireAdminRole(["super_admin"]),
   adminController.getDashboardCharts.bind(adminController)
 );
+router.get("/metrics", requireAdminRole(["super_admin"]), adminController.getMetrics.bind(adminController));
+router.get("/revenue", requireAdminRole(["super_admin"]), adminController.getRevenue.bind(adminController));
+router.get("/users", requireAdminRole(["super_admin"]), adminController.listUsers.bind(adminController));
+router.get("/logs", requireAdminRole(["super_admin"]), adminController.getLogs.bind(adminController));
 router.get("/centers", requireAdminRole(["super_admin"]), adminController.listCenters.bind(adminController));
 router.get("/centers/:id", requireAdminRole(["super_admin"]), adminController.getCenterById.bind(adminController));
 router.post("/centers/:id/block", requireAdminRole(["super_admin"]), adminController.blockCenter.bind(adminController));

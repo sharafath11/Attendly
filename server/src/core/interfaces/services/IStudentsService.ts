@@ -3,9 +3,9 @@ import { StudentResponseDTO } from "../../../dtos/students/students.dto";
 import { StudentQueryDTO } from "../../../dtos/students/students.dto";
 
 export interface IStudentsService {
-  createStudent(centerId: string, payload: CreateStudentDTO): Promise<StudentResponseDTO>;
+  createStudent(centerId: string, payload: CreateStudentDTO, actorUserId?: string): Promise<StudentResponseDTO>;
   getStudents(centerId: string, query: StudentQueryDTO): Promise<StudentsListResponseDTO>;
   getStudentById(centerId: string, id: string): Promise<StudentResponseDTO>;
   updateStudent(centerId: string, id: string, payload: UpdateStudentDTO): Promise<StudentResponseDTO>;
-  deleteStudent(centerId: string, id: string): Promise<void>;
+  deleteStudent(centerId: string, id: string, actorUserId?: string): Promise<void>;
 }

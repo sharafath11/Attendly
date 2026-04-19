@@ -14,6 +14,10 @@ import {
   LogOut,
   Layers,
   HandCoins,
+  MessageCircle,
+  Zap,
+  CreditCard,
+  Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 interface SidebarProps {
@@ -26,6 +30,8 @@ interface SidebarProps {
 
 const ownerNavItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Messages", href: "/messages", icon: MessageCircle },
+  { label: "Automation", href: "/automation", icon: Zap },
   { label: "Students", href: "/students", icon: Users },
   { label: "Batches", href: "/batches", icon: Layers },
   { label: "Attendance", href: "/attendance", icon: CalendarCheck2 },
@@ -34,6 +40,8 @@ const ownerNavItems = [
   { label: "Fees", href: "/fees", icon: WalletCards },
   { label: "Teacher Payments", href: "/teacher-payments", icon: HandCoins },
   { label: "Teachers", href: "/teachers", icon: Users },
+  { label: "Subscription", href: "/subscription-status", icon: CreditCard },
+  { label: "Setup guide", href: "/onboarding", icon: Rocket },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -139,7 +147,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
         <nav className="flex-1 space-y-1 px-3">
           {items.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href;
+            const active =
+              item.href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
               <Link
                 key={item.label}

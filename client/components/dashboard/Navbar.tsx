@@ -4,6 +4,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import Link from "next/link";
 import { Bell, Search, Sun, Moon, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { userAuthMethods } from "@/services/methods/userMethods";
@@ -62,12 +63,23 @@ export default function Navbar({ onMenuClick, role, userName }: NavbarProps) {
       </div>
 
       <div className="flex items-center gap-3">
-        <button
-          className="rounded-md border border-border p-2 text-muted-foreground hover:bg-secondary"
-          aria-label="Notifications"
-        >
-          <Bell className="h-4 w-4" />
-        </button>
+        {isOwner ? (
+          <Link
+            href="/messages"
+            className="rounded-md border border-border p-2 text-muted-foreground hover:bg-secondary"
+            aria-label="Messages and alerts"
+          >
+            <Bell className="h-4 w-4" />
+          </Link>
+        ) : (
+          <button
+            type="button"
+            className="rounded-md border border-border p-2 text-muted-foreground hover:bg-secondary"
+            aria-label="Notifications"
+          >
+            <Bell className="h-4 w-4" />
+          </button>
+        )}
         <button
           className="rounded-md border border-border p-2 text-muted-foreground hover:bg-secondary"
           onClick={toggleTheme}

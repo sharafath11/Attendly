@@ -5,7 +5,7 @@ export interface IUserDto {
     email: string
     password?: string
     authProvider?: "local" | "google"
-    role?: "center_owner" | "teacher" | "super_admin"
+    role?: "center_owner" | "teacher" | "super_admin" | "parent"
     centerId?: string
     status?: "active" | "pending" | "disabled"
     phone?: string
@@ -16,7 +16,7 @@ export interface IUserLoginDTO {
     email: string
     tocken: string,
     refreshToken : string
-    role?: "center_owner" | "teacher" | "super_admin"
+    role?: "center_owner" | "teacher" | "super_admin" | "parent"
     centerId?: string
     status?: "active" | "pending" | "disabled"
 }

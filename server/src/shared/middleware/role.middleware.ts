@@ -63,8 +63,11 @@ export const requireRole =
       }
 
       const role = user.role ?? "center_owner";
+      if (role === "parent") {
+        return sendResponse(res, StatusCode.FORBIDDEN, MESSAGES.COMMON.ACCESS_DENIED, false);
+      }
       const allowedRoles = roles;
-      if (!allowedRoles.includes(role)) {
+      if (!allowedRoles.includes(role as "center_owner" | "teacher" | "super_admin")) {
         return sendResponse(res, StatusCode.FORBIDDEN, MESSAGES.COMMON.ACCESS_DENIED, false);
       }
 

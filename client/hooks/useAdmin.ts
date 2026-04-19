@@ -5,6 +5,10 @@ import {
   AdminCenter,
   AdminCenterDetail,
   AdminDashboard,
+  AdminLogs,
+  AdminPlatformMetrics,
+  AdminRevenue,
+  AdminUserRow,
   ApiResponse,
   BlockCenterPayload,
   UpdatePaymentStatusPayload,
@@ -23,6 +27,38 @@ export const useAdminDashboardCharts = () => {
   return useQuery<ApiResponse<AdminCharts> | null>({
     queryKey: ["admin", "charts"],
     queryFn: () => adminService.getDashboardCharts(),
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useAdminMetrics = () => {
+  return useQuery<ApiResponse<AdminPlatformMetrics> | null>({
+    queryKey: ["admin", "metrics"],
+    queryFn: () => adminService.getMetrics(),
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useAdminRevenue = () => {
+  return useQuery<ApiResponse<AdminRevenue> | null>({
+    queryKey: ["admin", "revenue"],
+    queryFn: () => adminService.getRevenue(),
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useAdminUsers = (role?: string) => {
+  return useQuery<ApiResponse<AdminUserRow[]> | null>({
+    queryKey: ["admin", "users", role ?? "all"],
+    queryFn: () => adminService.getUsers(role),
+    placeholderData: keepPreviousData,
+  });
+};
+
+export const useAdminLogs = () => {
+  return useQuery<ApiResponse<AdminLogs> | null>({
+    queryKey: ["admin", "logs"],
+    queryFn: () => adminService.getLogs(),
     placeholderData: keepPreviousData,
   });
 };

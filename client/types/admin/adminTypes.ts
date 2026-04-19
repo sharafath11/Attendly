@@ -10,6 +10,46 @@ export type AdminDashboard = {
   monthlyRevenue: number;
 };
 
+export type AdminPlatformMetrics = AdminDashboard & {
+  totalParents: number;
+  totalCenterOwners: number;
+  whatsappSent30d: number;
+  whatsappFailed30d: number;
+  feeRemindersSent30d: number;
+  attendanceMarks30d: number;
+  platformPaymentsCollectedInr: number;
+  dailyActiveUsersApprox: number;
+  topCentersByPlatformPayments: { centerId: string; centerName: string; totalInr: number }[];
+  inactiveCenters7d: number;
+  atRiskCentersApprox: number;
+  notificationFailures24h: number;
+};
+
+export type AdminRevenue = {
+  monthlyRecurringRevenue: number;
+  platformPaymentsCollectedInr: number;
+  activeSubscriptionCenters: number;
+  pendingPaymentCenters: number;
+  expiredCenters: number;
+  blockedCentersCount: number;
+};
+
+export type AdminUserRow = {
+  id: string;
+  email: string;
+  username: string;
+  role: string;
+  phone?: string;
+  centerId?: string | null;
+  status: string;
+  createdAt: string;
+};
+
+export type AdminLogs = {
+  activities: { id: string; centerId: string; action: string; summary: string; createdAt: string }[];
+  whatsappFailures: { id: string; centerId: string; type: string; error?: string; createdAt: string }[];
+};
+
 export type AdminCharts = {
   revenueByMonth: { month: string; revenue: number }[];
   centersGrowth: { month: string; centers: number }[];
