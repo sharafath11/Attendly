@@ -94,14 +94,25 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 pb-4">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{formatToday()}</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-          Your center at a glance
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Here’s what to do next — tap a card or a quick action below.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{formatToday()}</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            Your center at a glance
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Here’s what to do next — tap a card or a quick action below.
+          </p>
+        </div>
+        {isOwner && (
+          <Link
+            href="/company-analytics"
+            className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/20"
+          >
+            <TrendingUp className="h-4 w-4" />
+            Company Analytics
+          </Link>
+        )}
       </div>
 
       {dashboard.insights?.insightLines && dashboard.insights.insightLines.length > 0 ? (

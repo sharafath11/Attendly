@@ -19,6 +19,19 @@ const ensureStringArray = (value: unknown): string[] => {
   return days;
 };
 
+const ensureSubjectsArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    throwError("subjects must be an array", StatusCode.BAD_REQUEST);
+  }
+
+  const subjects = value.map((item) => String(item).trim()).filter(Boolean);
+  if (subjects.length === 0) {
+    throwError("subjects must include at least one subject", StatusCode.BAD_REQUEST);
+  }
+
+  return subjects;
+};
+
 export const validateCreateBatch = (payload: CreateBatchDTO): CreateBatchDTO => {
   if (
     !isNonEmptyString(payload.batchName) ||
@@ -26,7 +39,8 @@ export const validateCreateBatch = (payload: CreateBatchDTO): CreateBatchDTO => 
     !isNonEmptyString(payload.medium) ||
     !isNonEmptyString(payload.session) ||
     !isNonEmptyString(payload.scheduleTime) ||
-    payload.days === undefined
+    payload.days === undefined ||
+    payload.subjects === undefined
   ) {
     throwError(MESSAGES.COMMON.MISSING_FIELDS, StatusCode.BAD_REQUEST);
   }
@@ -38,6 +52,7 @@ export const validateCreateBatch = (payload: CreateBatchDTO): CreateBatchDTO => 
     session: payload.session.trim(),
     scheduleTime: payload.scheduleTime.trim(),
     days: ensureStringArray(payload.days),
+    subjects: ensureSubjectsArray(payload.subjects),
   };
 };
 
@@ -81,6 +96,10 @@ export const validateUpdateBatch = (payload: UpdateBatchDTO): UpdateBatchDTO => 
 
   if (payload.days !== undefined) {
     updated.days = ensureStringArray(payload.days);
+  }
+
+  if (payload.subjects !== undefined) {
+    updated.subjects = ensureSubjectsArray(payload.subjects);
   }
 
   return updated;

@@ -8,6 +8,9 @@ interface BatchCardProps {
   onDelete: (batch: Batch) => void;
   onViewStudents: (batch: Batch) => void;
   onMarkAttendance: (batch: Batch) => void;
+  onAddExamMark: (batch: Batch) => void;
+  onCreateExam?: (batch: Batch) => void;
+  onViewExams: (batch: Batch) => void;
   actionsDisabled?: boolean;
   attendanceDisabled?: boolean;
   isOwner?: boolean;
@@ -21,6 +24,9 @@ export default function BatchCard({
   onDelete,
   onViewStudents,
   onMarkAttendance,
+  onAddExamMark,
+  onCreateExam,
+  onViewExams,
   actionsDisabled = false,
   attendanceDisabled = false,
   isOwner = false,
@@ -91,6 +97,44 @@ export default function BatchCard({
           className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary"
         >
           View Students
+        </button>
+
+        {isOwner ? (
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              if (!actionsDisabled && onCreateExam) {
+                onCreateExam(batch);
+              }
+            }}
+            disabled={actionsDisabled}
+            className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Create Exam
+          </button>
+        ) : (
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              if (!actionsDisabled) {
+                onAddExamMark(batch);
+              }
+            }}
+            disabled={actionsDisabled}
+            className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Add Exam Mark
+          </button>
+        )}
+
+        <button
+          onClick={(event) => {
+            event.stopPropagation();
+            onViewExams(batch);
+          }}
+          className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary"
+        >
+          View Exams
         </button>
       </div>
     </div>

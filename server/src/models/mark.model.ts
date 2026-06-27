@@ -6,6 +6,7 @@ export interface IMark {
   examId: mongoose.Types.ObjectId;
   studentId: mongoose.Types.ObjectId;
   marksObtained: number;
+  grade?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -18,6 +19,7 @@ const markSchema = new Schema<MarkDocument>(
     examId: { type: Schema.Types.ObjectId, required: true, ref: "Exam" },
     studentId: { type: Schema.Types.ObjectId, required: true, ref: "Student" },
     marksObtained: { type: Number, required: true },
+    grade: { type: String, required: false },
   },
   { timestamps: true }
 );

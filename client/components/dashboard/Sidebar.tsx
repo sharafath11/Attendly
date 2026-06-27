@@ -138,6 +138,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
         { label: "Parents Directory", href: "/parents" },
         { label: "Batch Management", href: "/batches" },
         { label: "Attendance Logs", href: "/attendance" },
+        { label: "Schedule Exam", href: "/exams/create" },
         { label: "Fee Records", href: "/fees" },
       ],
     };

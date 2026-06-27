@@ -106,13 +106,15 @@ async function _connect(centerId: string): Promise<void> {
     CenterModel.updateOne({ _id: new mongoose.Types.ObjectId(centerId) }, { whatsappStatus: "Connected" })
       .catch((err) => console.error(`[WhatsApp] Database update failed for ${centerId}:`, err));
 
-    // Auto-retry pending/failed messages
+    // Auto-retry failed messages in MongoDB queue
     (async () => {
       try {
-        const { getWAQueue } = await import("./whatsappQueue.service");
-        const queue = getWAQueue();
-        await queue.retryJobs();
-        console.log(`[WhatsApp] Auto-triggered retries for failed jobs for ${centerId}.`);
+        const { WhatsappQueueModel } = await import("../models/whatsappQueue.model");
+        const updated = await WhatsappQueueModel.updateMany(
+          { centerId: new mongoose.Types.ObjectId(centerId), status: "failed" },
+          { $set: { status: "pending", nextAttemptAt: new Date(), attempts: 0 } }
+        );
+        console.log(`[WhatsApp] Auto-triggered ${updated.modifiedCount} retries for failed jobs for ${centerId}.`);
       } catch (err) {
         console.error(`[WhatsApp] Failed to retry jobs for ${centerId}:`, err);
       }

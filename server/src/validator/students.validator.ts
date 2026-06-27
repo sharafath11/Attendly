@@ -65,9 +65,11 @@ export const validateStudentsQuery = (query: StudentQueryDTO): StudentQueryDTO =
     throwError("page must be a positive number", StatusCode.BAD_REQUEST);
   }
 
-  if (Number.isNaN(limit) || limit <= 0 || limit > 100) {
-    throwError("limit must be between 1 and 100", StatusCode.BAD_REQUEST);
+  if (Number.isNaN(limit) || limit <= 0) {
+    throwError("limit must be a positive number", StatusCode.BAD_REQUEST);
   }
+
+  const clampedLimit = Math.min(limit, 1000);
 
   if (query.batchId && !mongoose.Types.ObjectId.isValid(query.batchId)) {
     throwError("Invalid batchId", StatusCode.BAD_REQUEST);
@@ -78,7 +80,7 @@ export const validateStudentsQuery = (query: StudentQueryDTO): StudentQueryDTO =
     batchId: query.batchId,
     session: query.session,
     page,
-    limit,
+    limit: clampedLimit,
     cursor: query.cursor ? String(query.cursor) : undefined,
     sortBy: query.sortBy ? String(query.sortBy) : undefined,
     sortOrder: query.sortOrder === "asc" || query.sortOrder === "desc" ? query.sortOrder : undefined,

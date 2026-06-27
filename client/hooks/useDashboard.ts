@@ -9,3 +9,11 @@ export const useDashboard = () => {
     placeholderData: keepPreviousData,
   });
 };
+
+export const useCompanyAnalytics = () => {
+  return useQuery({
+    queryKey: ["companyAnalytics"],
+    queryFn: () => dashboardService.getCompanyAnalytics(),
+    placeholderData: keepPreviousData,
+  });
+};

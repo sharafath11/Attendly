@@ -386,6 +386,7 @@ export class UserService implements IStudentsService, IBatchesService {
       session: batch.session,
       scheduleTime: batch.scheduleTime,
       days: batch.days,
+      subjects: batch.subjects,
       userId: batch.userId.toString(),
       studentCount,
       createdAt: batch.createdAt,
@@ -402,6 +403,7 @@ export class UserService implements IStudentsService, IBatchesService {
       session: payload.session,
       scheduleTime: payload.scheduleTime,
       days: payload.days,
+      subjects: payload.subjects,
       centerId: new mongoose.Types.ObjectId(centerId),
       userId: new mongoose.Types.ObjectId(centerId),
     } as Partial<IBatch>);
@@ -444,6 +446,7 @@ export class UserService implements IStudentsService, IBatchesService {
       session: payload.session ?? existing.session,
       scheduleTime: payload.scheduleTime ?? existing.scheduleTime,
       days: payload.days ?? existing.days,
+      subjects: payload.subjects ?? existing.subjects,
     });
 
     if (!updated) {

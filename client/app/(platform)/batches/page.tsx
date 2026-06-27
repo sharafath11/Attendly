@@ -31,6 +31,7 @@ type BatchFormValues = {
   session: string;
   scheduleTime: string;
   days: string[];
+  subjects: string;
 };
 
 const emptyForm: BatchFormValues = {
@@ -40,6 +41,7 @@ const emptyForm: BatchFormValues = {
   session: "",
   scheduleTime: "",
   days: [],
+  subjects: "",
 };
 
 const dayOptions = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
@@ -134,6 +136,7 @@ export default function BatchesPage() {
       session: batch.session,
       scheduleTime: parseTimeForInput(batch.scheduleTime),
       days: batch.days,
+      subjects: batch.subjects?.join(", ") || "",
     };
     setDaysSelection(batch.days);
     setModalKey(`edit-${batch.id}`);
@@ -155,6 +158,7 @@ export default function BatchesPage() {
       session: current.session.trim(),
       scheduleTime: formatTimeForSubmit(current.scheduleTime.trim()),
       days: current.days,
+      subjects: current.subjects.split(",").map(s => s.trim()).filter(Boolean),
     };
 
     if (
@@ -163,7 +167,8 @@ export default function BatchesPage() {
       !payload.medium ||
       !payload.session ||
       !payload.scheduleTime ||
-      payload.days.length === 0
+      payload.days.length === 0 ||
+      payload.subjects.length === 0
     ) {
       showErrorToast("Please fill all required fields");
       return;
@@ -262,6 +267,9 @@ export default function BatchesPage() {
               onDelete={openDeleteConfirm}
               onViewStudents={(selected) => router.push(`/batches/${selected.id}/students`)}
               onMarkAttendance={(selected) => router.push(`/attendance/${selected.id}`)}
+              onAddExamMark={(selected) => router.push(`/exams/${selected.id}`)}
+              onCreateExam={(selected) => router.push(`/exams/create?batchId=${selected.id}`)}
+              onViewExams={(selected) => router.push(`/exams/${selected.id}/results`)}
               actionsDisabled={!isActive}
               attendanceDisabled={!isActive}
               isOwner={isOwner}
@@ -336,6 +344,14 @@ export default function BatchesPage() {
             defaultValue={formRef.current.scheduleTime}
             onChange={(event) => {
               formRef.current.scheduleTime = event.target.value;
+            }}
+          />
+          <FormInput
+            label="Subjects (Comma separated)"
+            placeholder="e.g. Mathematics, Physics"
+            defaultValue={formRef.current.subjects}
+            onChange={(event) => {
+              formRef.current.subjects = event.target.value;
             }}
           />
 

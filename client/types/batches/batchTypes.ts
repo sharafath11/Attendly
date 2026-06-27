@@ -22,7 +22,7 @@ export type CreateBatchPayload = {
   session: string;
   scheduleTime: string;
   days: string[];
-  subjects?: string[];
+  subjects: string[];
 };
 
 export type UpdateBatchPayload = Partial<CreateBatchPayload>;

@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!active) return;
         if (res?.ok && res.data?.role) {
           setUser({
-            id: res.data.id,
+            id: res.data.userId || res.data.id || res.data._id,
             name: res.data.name ?? null,
             username: res.data.username ?? null,
             role: res.data.role as UserRole,

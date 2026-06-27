@@ -6,6 +6,7 @@ import AttendanceSummaryCard from "@/components/attendance/AttendanceSummaryCard
 import DataTable from "@/components/dashboard/DataTable";
 import { useStudent } from "@/hooks/useStudents";
 import { useAttendanceHistory, useStudentAttendanceSummary } from "@/hooks/useAttendance";
+import { useStudentMarks } from "@/hooks/useExams";
 import { useState } from "react";
 import type { AttendanceHistoryRecord } from "@/types/attendance/attendanceTypes";
 
@@ -25,6 +26,11 @@ export default function StudentProfilePage() {
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
   });
+
+  const { data: marksRes, isLoading: marksLoading } = useStudentMarks(studentId);
+  const marksList = marksRes?.data || [];
+
+  const [activeTab, setActiveTab] = useState<"attendance" | "marks">("attendance");
 
   const student = studentData?.data;
   const summary = summaryData?.data;
@@ -110,8 +116,32 @@ export default function StudentProfilePage() {
         />
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex gap-4 border-b border-border">
+        <button
+          onClick={() => setActiveTab("attendance")}
+          className={`pb-2 text-sm font-medium ${
+            activeTab === "attendance"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Attendance History
+        </button>
+        <button
+          onClick={() => setActiveTab("marks")}
+          className={`pb-2 text-sm font-medium ${
+            activeTab === "marks"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Academic Marks
+        </button>
+      </div>
+
+      {activeTab === "attendance" ? (
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-foreground">Attendance History</h2>
             <p className="text-sm text-muted-foreground">All attendance records for this student.</p>
@@ -188,7 +218,65 @@ export default function StudentProfilePage() {
             />
           )}
         </div>
-      </div>
+      ) : (
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Exam Performance</h2>
+          {marksLoading ? (
+            <div className="rounded-lg border border-border bg-background p-4 text-sm text-muted-foreground">
+              Loading academic marks...
+            </div>
+          ) : marksList.length === 0 ? (
+            <div className="rounded-lg border border-border bg-background p-8 text-center text-sm text-muted-foreground">
+              No exam marks found for this student.
+            </div>
+          ) : (
+            <DataTable
+              columns={[
+                {
+                  key: "subject",
+                  header: "Subject",
+                  render: (row: any) => row.examId?.subject ?? "—",
+                },
+                {
+                  key: "examName",
+                  header: "Exam Name",
+                  render: (row: any) => row.examId?.examName ?? "—",
+                },
+                {
+                  key: "score",
+                  header: "Score",
+                  render: (row: any) => (
+                    <span className="font-semibold text-primary">
+                      {row.marksObtained} / {row.examId?.totalMarks}
+                    </span>
+                  ),
+                },
+                {
+                  key: "percentage",
+                  header: "Percentage",
+                  render: (row: any) => {
+                    if (!row.examId?.totalMarks) return "—";
+                    const pct = Math.round((row.marksObtained / row.examId.totalMarks) * 100);
+                    return `${pct}%`;
+                  },
+                },
+                {
+                  key: "grade",
+                  header: "Grade",
+                  render: (row: any) => row.grade ? <span className="uppercase">{row.grade}</span> : "—",
+                },
+                {
+                  key: "date",
+                  header: "Date",
+                  render: (row: any) => row.examId?.date ? new Date(row.examId.date).toLocaleDateString() : "—",
+                },
+              ]}
+              data={marksList}
+              className="border-0"
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

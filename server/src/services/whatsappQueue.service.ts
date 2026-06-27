@@ -1,63 +1,31 @@
-import { Queue, QueueOptions } from "bullmq";
-import { getRedisConnectionOptions } from "../utils/redis";
-
-// ─── Job payload ─────────────────────────────────────────────────────────────
+import mongoose from "mongoose";
+import { WhatsappQueueModel } from "../models/whatsappQueue.model";
 
 export interface WhatsAppJobData {
-  phone: string;    // E.164 digits without "+", e.g. "919876543210"
+  phone: string;
   message: string;
   centerId: string;
-  notificationId?: string; // optional — for status tracking
+  notificationId?: string;
   parentNotificationId?: string;
 }
-
-// ─── Shared queue name (must match the worker) ───────────────────────────────
-
-export const WA_QUEUE_NAME = "whatsapp-outbound";
-
-// ─── Default job options ──────────────────────────────────────────────────────
-
-const DEFAULT_JOB_OPTS = {
-  attempts: 3,
-  backoff: {
-    type: "exponential" as const,
-    delay: 10_000, // 10 s → 20 s → 40 s
-  },
-  removeOnComplete: { count: 200 },
-  removeOnFail: { count: 500 },
-};
-
-// ─── Singleton queue ─────────────────────────────────────────────────────────
-
-let _queue: Queue<WhatsAppJobData> | null = null;
-
-export function getWAQueue(): Queue<WhatsAppJobData> {
-  if (!_queue) {
-    const connection = getRedisConnectionOptions();
-    const opts: QueueOptions = { connection };
-    _queue = new Queue<WhatsAppJobData>(WA_QUEUE_NAME, opts);
-
-    _queue.on("error", (err) => {
-      console.error("[WAQueue] Queue error:", err.message);
-    });
-  }
-  return _queue;
-}
-
-// ─── Public: enqueue a single message ────────────────────────────────────────
 
 export async function enqueueWhatsAppMessage(
   data: WhatsAppJobData,
   delayMs = 0
 ): Promise<void> {
-  const queue = getWAQueue();
-  await queue.add("send-message", data, {
-    ...DEFAULT_JOB_OPTS,
-    delay: delayMs,
+  const nextAttemptAt = new Date(Date.now() + delayMs);
+  
+  await WhatsappQueueModel.create({
+    phone: data.phone,
+    message: data.message,
+    centerId: new mongoose.Types.ObjectId(data.centerId),
+    notificationId: data.notificationId ? new mongoose.Types.ObjectId(data.notificationId) : undefined,
+    parentNotificationId: data.parentNotificationId ? new mongoose.Types.ObjectId(data.parentNotificationId) : undefined,
+    status: "pending",
+    attempts: 0,
+    nextAttemptAt
   });
 }
-
-// ─── Public: enqueue a batch (broadcast) with staggered delays ───────────────
 
 export async function enqueueBroadcast(
   phones: string[],
@@ -65,7 +33,6 @@ export async function enqueueBroadcast(
   centerId: string,
   baseDelayMs = 0
 ): Promise<void> {
-  const queue = getWAQueue();
   const STAGGER_MS_MIN = 5_000;
   const STAGGER_MS_MAX = 8_000;
 
@@ -76,14 +43,19 @@ export async function enqueueBroadcast(
     const delay = baseDelayMs + index * jitter;
 
     return {
-      name: "send-message" as const,
-      data: { phone, message, centerId } satisfies WhatsAppJobData,
-      opts: { ...DEFAULT_JOB_OPTS, delay },
+      phone,
+      message,
+      centerId: new mongoose.Types.ObjectId(centerId),
+      status: "pending",
+      attempts: 0,
+      nextAttemptAt: new Date(Date.now() + delay),
     };
   });
 
-  await queue.addBulk(jobs);
-  console.log(
-    `[WAQueue] Queued ${jobs.length} broadcast messages with staggered delays.`
-  );
+  if (jobs.length > 0) {
+    await WhatsappQueueModel.insertMany(jobs);
+    console.log(
+      `[WAQueue] Queued ${jobs.length} broadcast messages with staggered delays in MongoDB.`
+    );
+  }
 }

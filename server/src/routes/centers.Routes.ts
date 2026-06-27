@@ -24,5 +24,6 @@ router.get(
   checkCenterBlocked,
   centerController.getMyCenter.bind(centerController)
 );
+router.get("/search", centerController.searchCenters.bind(centerController));
 
 export default router;

@@ -84,4 +84,14 @@ export class CenterController implements ICenterController {
       handleControllerError(res, error);
     }
   }
+
+  async searchCenters(req: Request, res: Response): Promise<void> {
+    try {
+      const q = req.query.q as string;
+      const result = await this._centerService.searchCenters(q || "");
+      sendResponse(res, StatusCode.OK, "Centers matched", true, result);
+    } catch (error) {
+      handleControllerError(res, error);
+    }
+  }
 }

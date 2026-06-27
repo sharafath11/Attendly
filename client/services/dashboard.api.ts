@@ -3,4 +3,5 @@ import type { ApiResponse, DashboardData } from "@/types/dashboard/dashboardType
 
 export const dashboardApi = {
   getDashboard: () => getRequest<ApiResponse<DashboardData>>("/dashboard"),
+  getCompanyAnalytics: () => getRequest<any>("/dashboard/company-analytics"),
 };

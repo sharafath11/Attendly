@@ -25,7 +25,7 @@ const batchSchema: Schema<BatchDocument> = new Schema(
     session: { type: String, required: true, trim: true },
     scheduleTime: { type: String, required: true, trim: true },
     days: { type: [String], required: true, default: [] },
-    subjects: { type: [String], required: false, default: [] },
+    subjects: { type: [String], required: true, default: [] },
     centerId: { type: Schema.Types.ObjectId, required: true, ref: "Center", index: true },
     userId: { type: Schema.Types.ObjectId, required: true, ref: "User", index: true },
   },

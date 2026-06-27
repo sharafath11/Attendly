@@ -79,24 +79,17 @@ startSubscriptionExpiryJob();
 startAutomationJobs();
 startRetentionJobs();
 
-// ── WhatsApp / BullMQ ─────────────────────────────────────────────────────
-const hasRedis = Boolean(process.env.REDIS_URL || process.env.REDIS_HOST);
-if (hasRedis) {
-  startWhatsAppWorker();
-  import("./models/center.model").then(({ CenterModel }) => {
-    CenterModel.find({ whatsappStatus: "Connected" }).lean().then(centers => {
-      centers.forEach(c => {
-        initWhatsApp(c._id.toString()).catch((e) =>
-          console.error(`[WhatsApp] Startup connection failed for center ${c._id}:`, e)
-        );
-      });
-    }).catch(e => console.error("[WhatsApp] Failed to fetch centers for startup:", e));
-  });
-} else {
-  console.warn(
-    "[WhatsApp] REDIS_HOST/REDIS_URL not set — BullMQ worker and WhatsApp not started."
-  );
-}
+// ── WhatsApp Worker (MongoDB Polling) ──────────────────────────────────────
+startWhatsAppWorker();
+import("./models/center.model").then(({ CenterModel }) => {
+  CenterModel.find({ whatsappStatus: "Connected" }).lean().then(centers => {
+    centers.forEach(c => {
+      initWhatsApp(c._id.toString()).catch((e) =>
+        console.error(`[WhatsApp] Startup connection failed for center ${c._id}:`, e)
+      );
+    });
+  }).catch(e => console.error("[WhatsApp] Failed to fetch centers for startup:", e));
+});
 app.use("/api/auth", authRoutes);
 app.use("/api/students", userRoutes);
 app.use("/api/batches", userBatchRoutes);

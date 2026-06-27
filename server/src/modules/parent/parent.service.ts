@@ -14,8 +14,9 @@ import { FeeModel } from "../../models/fees.model";
 import { AttendanceModel } from "../../models/attendance.model";
 import { BatchModel } from "../../models/batches.model";
 import { NotificationModel } from "../../models/notification.model";
-import { sendWhatsAppMessage } from "../../services/whatsapp.service";
+import { enqueueWhatsAppMessage } from "../../services/whatsappQueue.service";
 import { generateAccessToken, generateRefreshToken } from "../../lib/jwtToken";
+import { OtpSessionModel } from "../../models/otpSession.model";
 
 const OTP_PREFIX = "otp:parent:";
 
@@ -83,26 +84,26 @@ export class ParentService {
     }
 
     const otp = generateOtp();
-    const key = `${OTP_PREFIX}${digits}`;
-    const existing = await redis.get(key);
-    if (existing) {
-      throwError("OTP already sent. Please wait before requesting again.", StatusCode.BAD_REQUEST);
-    }
-    await redis.set(key, otp, "EX", OTP_TTL_SECONDS);
+    
+    // Save to OtpSession with 5-minute expiry
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    await OtpSessionModel.create({
+      phone: digits,
+      otp,
+      centerId: new mongoose.Types.ObjectId(centerId),
+      expiresAt
+    });
 
-    const msg = `Your Attendly parent login code is ${otp}. It expires in a few minutes. Do not share this code.`;
-    const wa = await sendWhatsAppMessage(digits, msg);
-
-    if (!wa.ok) {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn(`[Parent OTP] WhatsApp failed (${wa.error}). OTP for ${digits}: ${otp}`);
-      } else {
-        throwError(
-          "Could not send WhatsApp (check Twilio / 360dialog configuration).",
-          StatusCode.SERVICE_UNAVAILABLE
-        );
-      }
-    }
+    const timestamp = new Date().toLocaleTimeString("en-US", { hour12: false });
+    const centerObj = await CenterModel.findById(centerId).select("name").lean();
+    const centerName = centerObj?.name || "our";
+    const msg = `Dear Parent, your login verification OTP for ${centerName} portal is: ${otp}. It is valid for 5 minutes. (Ref: ${timestamp})`;
+    
+    await enqueueWhatsAppMessage({
+      phone: digits,
+      message: msg,
+      centerId
+    }).catch(err => console.error("[Parent OTP] Failed to enqueue WhatsApp message", err));
 
     return {
       needsCenterPick: false as const,
@@ -113,9 +114,14 @@ export class ParentService {
 
   async verifyOtp(phoneRaw: string, otp: string, centerIdHint?: string) {
     const digits = normalizePhoneDigits(phoneRaw);
-    const key = `${OTP_PREFIX}${digits}`;
-    const stored = await redis.get(key);
-    if (!stored || stored !== otp) {
+    
+    const session = await OtpSessionModel.findOne({
+      phone: digits,
+      otp,
+      ...(centerIdHint ? { centerId: new mongoose.Types.ObjectId(centerIdHint) } : {})
+    }).sort({ createdAt: -1 }).exec();
+
+    if (!session || session.expiresAt < new Date()) {
       throwError("Invalid or expired code.", StatusCode.BAD_REQUEST);
     }
 
@@ -138,7 +144,7 @@ export class ParentService {
       centerId = centerIdHint;
     }
 
-    await redis.del(key);
+    await OtpSessionModel.deleteOne({ _id: session._id });
 
     const center = await CenterModel.findById(centerId).lean().exec();
     if (!center || center.blocked) {

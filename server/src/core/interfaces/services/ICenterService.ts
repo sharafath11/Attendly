@@ -15,4 +15,5 @@ export interface ICenterService {
     blocked?: boolean;
     blockedReason?: string | null;
   }>;
+  searchCenters(query: string): Promise<Array<{ id: string; name: string; city: string }>>;
 }

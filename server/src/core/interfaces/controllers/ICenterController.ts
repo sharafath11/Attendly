@@ -7,4 +7,5 @@ export interface ICenterController {
   resendCenterRegistrationOtp(req: Request, res: Response): Promise<void>;
   getCenterStatus(req: Request, res: Response): Promise<void>;
   getMyCenter(req: Request, res: Response): Promise<void>;
+  searchCenters(req: Request, res: Response): Promise<void>;
 }

@@ -164,4 +164,18 @@ export class CenterService implements ICenterService {
       blockedReason: center.blockedReason ?? null,
     };
   }
+
+  async searchCenters(query: string): Promise<Array<{ id: string; name: string; city: string }>> {
+    const filter = { status: "active", blocked: false };
+    const q = query.trim();
+    if (q) {
+      (filter as any).name = { $regex: q, $options: "i" };
+    }
+    const centers = await this._centerRepository.findMany(filter);
+    return centers.slice(0, 10).map((c: any) => ({
+      id: c._id.toString(),
+      name: c.name,
+      city: c.address || "Unknown City",
+    }));
+  }
 }
