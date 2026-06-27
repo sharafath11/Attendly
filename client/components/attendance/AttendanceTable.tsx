@@ -4,8 +4,8 @@ import type { Student } from "@/types/students/studentTypes";
 
 interface AttendanceTableProps {
   students: Student[];
-  attendance: Record<string, "present" | "absent" | "leave">;
-  onStatusChange: (studentId: string, status: "present" | "absent" | "leave") => void;
+  attendance: Record<string, "present" | "absent" | "half_day" | "leave">;
+  onStatusChange: (studentId: string, status: "present" | "absent" | "half_day" | "leave") => void;
   disabled?: boolean;
 }
 
@@ -52,12 +52,12 @@ export default function AttendanceTable({
                 <input
                   type="radio"
                   name={`attendance-${student.id}`}
-                  checked={attendance[student.id] === "leave"}
-                  onChange={() => onStatusChange(student.id, "leave")}
+                  checked={attendance[student.id] === "half_day"}
+                  onChange={() => onStatusChange(student.id, "half_day")}
                   disabled={disabled}
                   className="h-4 w-4 accent-amber-500"
                 />
-                <span className="font-semibold text-amber-500">Leave</span>
+                <span className="font-semibold text-amber-500">Half Day</span>
               </label>
             </div>
           </div>

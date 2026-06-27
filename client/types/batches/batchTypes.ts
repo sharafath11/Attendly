@@ -6,9 +6,8 @@ export type Batch = {
   session: string;
   scheduleTime: string;
   days: string[];
+  subjects: string[];
   studentCount: number;
-  teacherId?: string | null;
-  teacherName?: string;
 };
 
 export type BatchFilters = {
@@ -23,7 +22,7 @@ export type CreateBatchPayload = {
   session: string;
   scheduleTime: string;
   days: string[];
-  teacherId?: string | null;
+  subjects?: string[];
 };
 
 export type UpdateBatchPayload = Partial<CreateBatchPayload>;

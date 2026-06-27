@@ -18,6 +18,8 @@ import { useBatches } from "@/hooks/useBatches";
 import { useLowAttendanceStudents } from "@/hooks/useAttendance";
 import type { DashboardData } from "@/types/dashboard/dashboardTypes";
 import EmptyState from "@/components/product/EmptyState";
+import { useAuth } from "@/context/AuthContext";
+import TeacherDashboardStats from "@/components/dashboard/TeacherDashboardStats";
 
 const emptyDashboard: DashboardData = {
   summary: {
@@ -54,6 +56,7 @@ const formatToday = () =>
   new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short" });
 
 export default function DashboardPage() {
+  const { isOwner } = useAuth();
   const { data: dashboardRes, isLoading } = useDashboard();
   const dashboard = dashboardRes?.data ?? emptyDashboard;
   const { data: batchesRes } = useBatches();
@@ -118,7 +121,7 @@ export default function DashboardPage() {
         </section>
       ) : null}
 
-      {!hasStudents ? (
+      {isOwner && !hasStudents ? (
         <EmptyState
           icon={Users}
           title="Add your first students"
@@ -147,30 +150,34 @@ export default function DashboardPage() {
             icon={<CalendarCheck2 className="h-5 w-5" />}
             accent="bg-primary/10 text-primary"
           />
-          <MetricCard
-            href="/fees"
-            label="Pending fees"
-            value={String(dashboard.summary.pendingFees)}
-            sub={
-              dashboard.summary.pendingFeesAmount
-                ? `${formatCurrency(dashboard.summary.pendingFeesAmount)} not collected yet`
-                : "All caught up"
-            }
-            icon={<WalletCards className="h-5 w-5" />}
-            accent="bg-amber-500/10 text-amber-700 dark:text-amber-300"
-          />
-          <MetricCard
-            href="/fees"
-            label="This month's collection"
-            value={monthlyRevenue ? formatCurrency(monthlyRevenue) : "—"}
-            sub={
-              monthlyRevenue
-                ? `${formatCurrency(monthlyRevenue)} collected`
-                : "Record fees to see totals"
-            }
-            icon={<TrendingUp className="h-5 w-5" />}
-            accent="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-          />
+          {isOwner && (
+            <>
+              <MetricCard
+                href="/fees"
+                label="Pending fees"
+                value={String(dashboard.summary.pendingFees)}
+                sub={
+                  dashboard.summary.pendingFeesAmount
+                    ? `${formatCurrency(dashboard.summary.pendingFeesAmount)} not collected yet`
+                    : "All caught up"
+                }
+                icon={<WalletCards className="h-5 w-5" />}
+                accent="bg-amber-500/10 text-amber-700 dark:text-amber-300"
+              />
+              <MetricCard
+                href="/fees"
+                label="This month's collection"
+                value={monthlyRevenue ? formatCurrency(monthlyRevenue) : "—"}
+                sub={
+                  monthlyRevenue
+                    ? `${formatCurrency(monthlyRevenue)} collected`
+                    : "Record fees to see totals"
+                }
+                icon={<TrendingUp className="h-5 w-5" />}
+                accent="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+              />
+            </>
+          )}
         </div>
       </section>
 
@@ -191,20 +198,24 @@ export default function DashboardPage() {
             <MessageCircle className="h-4 w-4 text-primary" />
             Send reminder
           </Link>
-          <Link
-            href="/students"
-            className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold shadow-sm transition hover:border-primary/40 hover:bg-muted/50"
-          >
-            <Users className="h-4 w-4 text-primary" />
-            Add student
-          </Link>
-          <Link
-            href="/fees"
-            className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold shadow-sm transition hover:border-primary/40 hover:bg-muted/50"
-          >
-            <IndianRupee className="h-4 w-4 text-primary" />
-            Collect payment
-          </Link>
+          {isOwner && (
+            <>
+              <Link
+                href="/students"
+                className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold shadow-sm transition hover:border-primary/40 hover:bg-muted/50"
+              >
+                <Users className="h-4 w-4 text-primary" />
+                Add student
+              </Link>
+              <Link
+                href="/fees"
+                className="flex min-h-[52px] items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-semibold shadow-sm transition hover:border-primary/40 hover:bg-muted/50"
+              >
+                <IndianRupee className="h-4 w-4 text-primary" />
+                Collect payment
+              </Link>
+            </>
+          )}
         </div>
       </section>
 
@@ -261,45 +272,53 @@ export default function DashboardPage() {
             </ul>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="text-sm font-medium text-foreground">Recent payments</p>
-                <p className="text-xs text-muted-foreground">Last few collections</p>
+          {isOwner && (
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Recent payments</p>
+                  <p className="text-xs text-muted-foreground">Last few collections</p>
+                </div>
+                <Link href="/fees" className="text-xs font-medium text-primary hover:underline">
+                  All fees
+                </Link>
               </div>
-              <Link href="/fees" className="text-xs font-medium text-primary hover:underline">
-                All fees
-              </Link>
+              <ul className="mt-3 space-y-2">
+                {dashboard.recentPayments.length === 0 ? (
+                  <li className="text-sm text-muted-foreground">No payments recorded yet.</li>
+                ) : (
+                  dashboard.recentPayments.slice(0, 4).map((p) => (
+                    <li
+                      key={p.id}
+                      className="flex items-center justify-between rounded-xl border border-border/80 px-3 py-2 text-sm"
+                    >
+                      <span className="truncate font-medium text-foreground">{p.student}</span>
+                      <span className="shrink-0 tabular-nums text-muted-foreground">{formatCurrency(p.amount)}</span>
+                    </li>
+                  ))
+                )}
+              </ul>
             </div>
-            <ul className="mt-3 space-y-2">
-              {dashboard.recentPayments.length === 0 ? (
-                <li className="text-sm text-muted-foreground">No payments recorded yet.</li>
-              ) : (
-                dashboard.recentPayments.slice(0, 4).map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex items-center justify-between rounded-xl border border-border/80 px-3 py-2 text-sm"
-                  >
-                    <span className="truncate font-medium text-foreground">{p.student}</span>
-                    <span className="shrink-0 tabular-nums text-muted-foreground">{formatCurrency(p.amount)}</span>
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
+          )}
         </div>
       </section>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-3 text-sm">
-        <span className="text-muted-foreground">Want the full analytics view?</span>
-        <Link
-          href="/reports"
-          className="inline-flex items-center justify-center rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-card-foreground transition-colors hover:bg-secondary"
-        >
-          Open reports
-          <ArrowRight className="ml-1 h-3 w-3" />
-        </Link>
-      </div>
+      {!isOwner && (
+        <TeacherDashboardStats />
+      )}
+
+      {isOwner && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-3 text-sm">
+          <span className="text-muted-foreground">Want the full analytics view?</span>
+          <Link
+            href="/reports"
+            className="inline-flex items-center justify-center rounded-md border border-border bg-card px-3 py-1.5 text-sm font-medium text-card-foreground transition-colors hover:bg-secondary"
+          >
+            Open reports
+            <ArrowRight className="ml-1 h-3 w-3" />
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

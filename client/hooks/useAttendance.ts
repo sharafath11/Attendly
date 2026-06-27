@@ -38,10 +38,10 @@ export const useLowAttendanceStudents = (batchId?: string) => {
   });
 };
 
-export const useAttendanceByDate = (batchId?: string, date?: string) => {
+export const useAttendanceByDate = (batchId?: string, date?: string, subject?: string) => {
   return useQuery<ApiResponse<AttendanceByDate> | null>({
-    queryKey: ["attendance", "by-date", batchId, date],
-    queryFn: () => attendanceService.getAttendanceByDate(batchId as string, date as string),
+    queryKey: ["attendance", "by-date", batchId, date, subject ?? ""],
+    queryFn: () => attendanceService.getAttendanceByDate(batchId as string, date as string, subject),
     enabled: Boolean(batchId && date),
     placeholderData: keepPreviousData,
   });

@@ -1,4 +1,4 @@
-import { FilterQuery, ProjectionType } from "mongoose";
+import mongoose, { FilterQuery, ProjectionType } from "mongoose";
 import { IStudentsRepository } from "../core/interfaces/repository/IStudentsRepository";
 import { StudentModel, IStudent, StudentDocument } from "../models/students.model";
 import { BaseRepository } from "./baseRepository";
@@ -63,6 +63,63 @@ export class StudentsRepository
       return Boolean(result);
     } catch (error) {
       throw this.handleError(error, MESSAGES.REPOSITORY.UPDATE_ERROR);
+    }
+  }
+
+  async findManyCursor(
+    filter: FilterQuery<StudentDocument>,
+    options: {
+      limit: number;
+      cursor?: string;
+      sortBy?: string;
+      sortOrder?: "asc" | "desc";
+    }
+  ): Promise<IStudent[]> {
+    try {
+      const { limit, cursor, sortBy = "createdAt", sortOrder = "desc" } = options;
+      const order = sortOrder === "asc" ? 1 : -1;
+
+      let queryFilter = { ...filter };
+      if (cursor) {
+        const operator = sortOrder === "asc" ? "$gt" : "$lt";
+        
+        if (sortBy === "_id") {
+          queryFilter._id = { [operator]: new mongoose.Types.ObjectId(cursor) };
+        } else {
+          // Compound cursor format: value_id
+          const parts = cursor.split("_");
+          const cursorValue = parts[0];
+          const cursorId = parts[1];
+
+          let parsedValue: any = cursorValue;
+          if (sortBy === "createdAt" || sortBy === "joinDate") {
+            parsedValue = new Date(cursorValue);
+          } else if (!isNaN(Number(cursorValue)) && cursorValue.trim() !== "") {
+            parsedValue = Number(cursorValue);
+          }
+
+          if (cursorId) {
+            queryFilter.$or = [
+              { [sortBy]: { [operator]: parsedValue } },
+              {
+                [sortBy]: parsedValue,
+                _id: { [operator]: new mongoose.Types.ObjectId(cursorId) },
+              },
+            ];
+          } else {
+            queryFilter[sortBy] = { [operator]: parsedValue };
+          }
+        }
+      }
+
+      return await this.model
+        .find(queryFilter)
+        .sort({ [sortBy]: order, _id: order })
+        .limit(limit + 1)
+        .lean()
+        .exec() as unknown as IStudent[];
+    } catch (error) {
+      throw this.handleError(error, MESSAGES.REPOSITORY.FIND_ALL_ERROR);
     }
   }
 }

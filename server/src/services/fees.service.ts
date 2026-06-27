@@ -1,4 +1,5 @@
 import { inject, injectable } from "tsyringe";
+import mongoose from "mongoose";
 import { IFeesService } from "../core/interfaces/services/IFeesService";
 import { IFeesRepository } from "../core/interfaces/repository/IFeesRepository";
 import { ICenterRepository } from "../core/interfaces/repository/ICenterRepository";
@@ -8,6 +9,8 @@ import { FeeFiltersDTO, FeeRecordDTO, MarkFeePaidDTO, UpdateFeeStatusDTO } from 
 import { throwError } from "../utils/response";
 import { StatusCode } from "../enums/statusCode";
 import { logActivity } from "../utils/activityLog.util";
+import { NotificationOrchestratorService } from "./notificationOrchestrator.service";
+import { FeeModel } from "../models/fees.model";
 
 @injectable()
 export class FeesService implements IFeesService {
@@ -17,7 +20,8 @@ export class FeesService implements IFeesService {
     @inject(TYPES.ICenterRepository)
     private _centerRepository: ICenterRepository,
     @inject(TYPES.ITeacherRepository)
-    private _teacherRepository: ITeacherRepository
+    private _teacherRepository: ITeacherRepository,
+    private _notifications: NotificationOrchestratorService
   ) {}
 
   private async ensureActiveSubscription(centerId: string, message: string): Promise<void> {
@@ -61,6 +65,17 @@ export class FeesService implements IFeesService {
       markedByUserId,
     });
 
+    const feeRecord = await FeeModel.findOne({
+      centerId: new mongoose.Types.ObjectId(centerId),
+      studentId: new mongoose.Types.ObjectId(payload.studentId),
+      month: payload.month,
+      year: payload.year,
+    })
+      .lean()
+      .exec();
+
+    const amount = feeRecord ? feeRecord.amount : 0;
+
     await logActivity({
       centerId,
       actorUserId: markedByUserId,
@@ -69,6 +84,13 @@ export class FeesService implements IFeesService {
       entityId: `${payload.studentId}-${payload.month}-${payload.year}`,
       summary: `Marked fee paid for student ${payload.studentId} (${payload.month}/${payload.year})`,
     });
+
+    // Fire-and-forget parent payment confirmation notification
+    this._notifications
+      .sendPaymentConfirmation(centerId, payload.studentId, amount, markedByUserId)
+      .catch((err) =>
+        console.error(`[Fees] Payment confirmation notification failed for student ${payload.studentId}:`, err)
+      );
   }
 
   async updateFeeStatus(centerId: string, authUserId: string, payload: UpdateFeeStatusDTO): Promise<void> {
@@ -82,6 +104,21 @@ export class FeesService implements IFeesService {
       entityId: `${payload.studentId}-${payload.month}-${payload.year}`,
       summary: `Fee status → ${payload.status} (${payload.month}/${payload.year})`,
     });
+
+    if (payload.status === "Paid") {
+      const feeRecord = await FeeModel.findOne({
+        centerId: new mongoose.Types.ObjectId(centerId),
+        studentId: new mongoose.Types.ObjectId(payload.studentId),
+        month: payload.month,
+        year: payload.year,
+      }).lean().exec();
+      const amount = feeRecord ? feeRecord.amount : 0;
+      this._notifications
+        .sendPaymentConfirmation(centerId, payload.studentId, amount, authUserId)
+        .catch((err) =>
+          console.error(`[Fees] Payment confirmation notification failed on status update for student ${payload.studentId}:`, err)
+        );
+    }
   }
 
   async getPendingFees(centerId: string, month?: number, year?: number): Promise<FeeRecordDTO[]> {

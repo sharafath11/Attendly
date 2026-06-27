@@ -8,12 +8,15 @@ import Modal from "@/components/dashboard/Modal";
 import FormInput from "@/components/dashboard/FormInput";
 import { Button } from "@/components/button";
 import { useSubscription } from "@/components/dashboard/SubscriptionContext";
+import { useAuth } from "@/context/AuthContext";
 import { showErrorToast, showSuccessToast } from "@/utils/toast";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   useCreateStudent,
   useDeleteStudent,
   useStudents,
   useUpdateStudent,
+  useInfiniteStudents,
 } from "@/hooks/useStudents";
 import { useBatches } from "@/hooks/useBatches";
 import type { CreateStudentPayload, Student } from "@/types/students/studentTypes";
@@ -21,6 +24,7 @@ import type { CreateStudentPayload, Student } from "@/types/students/studentType
 type StudentFormValues = {
   name: string;
   phone: string;
+  parentName: string;
   parentPhone: string;
   batchId: string;
   monthlyFee: string;
@@ -32,6 +36,7 @@ type StudentFormErrors = Partial<Record<keyof StudentFormValues, string>>;
 const emptyForm: StudentFormValues = {
   name: "",
   phone: "",
+  parentName: "",
   parentPhone: "",
   batchId: "",
   monthlyFee: "",
@@ -39,6 +44,7 @@ const emptyForm: StudentFormValues = {
 };
 
 const PHONE_REGEX = /^\+?[1-9]\d{7,14}$/;
+const STRICT_10_DIGIT_PHONE_REGEX = /^\d{10}$/;
 
 const toInputDate = (value: string) => {
   if (!value) return "";
@@ -49,9 +55,13 @@ const toInputDate = (value: string) => {
 
 export default function StudentsPage() {
   const { isActive } = useSubscription();
+  const { isOwner } = useAuth();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const [batchFilter, setBatchFilter] = useState("All Batches");
   const [sessionFilter, setSessionFilter] = useState("All Sessions");
+  const [sortBy, setSortBy] = useState<string>("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -61,23 +71,45 @@ export default function StudentsPage() {
 
   const studentsQuery = useMemo(
     () => ({
-      search: search.trim() || undefined,
+      search: debouncedSearch.trim() || undefined,
       batchId: batchFilter === "All Batches" ? undefined : batchFilter,
       session: sessionFilter === "All Sessions" ? undefined : sessionFilter,
-      page: 1,
+      sortBy,
+      sortOrder,
       limit: 10,
     }),
-    [search, batchFilter, sessionFilter],
+    [debouncedSearch, batchFilter, sessionFilter, sortBy, sortOrder],
   );
 
-  const { data, isLoading } = useStudents(studentsQuery);
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    error,
+  } = useInfiniteStudents(studentsQuery);
+
   const { data: batchesData } = useBatches();
 
   const createStudent = useCreateStudent();
   const updateStudent = useUpdateStudent();
   const deleteStudent = useDeleteStudent();
 
-  const students = data?.data?.students ?? [];
+  const allStudentsRaw = useMemo(() => {
+    return data?.pages.flatMap((page) => page?.data?.data ?? []) ?? [];
+  }, [data]);
+
+  const students = useMemo(() => {
+    const seen = new Set<string>();
+    return allStudentsRaw.filter((s) => {
+      if (!s || !s.id) return false;
+      if (seen.has(s.id)) return false;
+      seen.add(s.id);
+      return true;
+    });
+  }, [allStudentsRaw]);
+
   const batches = batchesData?.data?.batches ?? [];
 
   const batchNameById = useMemo(() => {
@@ -120,6 +152,7 @@ export default function StudentsPage() {
     formRef.current = {
       name: student.name,
       phone: student.phone,
+      parentName: student.parentName || "",
       parentPhone: student.parentPhone || "",
       batchId: student.batchId,
       monthlyFee: String(student.monthlyFee ?? ""),
@@ -144,8 +177,14 @@ export default function StudentsPage() {
       nextErrors.phone = "Enter a valid phone number";
     }
 
-    if (current.parentPhone.trim() && !PHONE_REGEX.test(current.parentPhone.trim())) {
-      nextErrors.parentPhone = "Enter a valid parent phone number";
+    if (!current.parentName.trim()) {
+      nextErrors.parentName = "Parent name is required";
+    }
+
+    if (!current.parentPhone.trim()) {
+      nextErrors.parentPhone = "Parent phone number is required";
+    } else if (!STRICT_10_DIGIT_PHONE_REGEX.test(current.parentPhone.trim())) {
+      nextErrors.parentPhone = "Parent phone number must be exactly 10 digits";
     }
 
     if (!current.batchId.trim()) {
@@ -171,7 +210,8 @@ export default function StudentsPage() {
     const payload: CreateStudentPayload = {
       name: current.name.trim(),
       phone: current.phone.trim(),
-      parentPhone: current.parentPhone.trim() || undefined,
+      parentName: current.parentName.trim(),
+      parentPhone: current.parentPhone.trim(),
       batchId: current.batchId.trim(),
       monthlyFee: Number(current.monthlyFee) || 0,
       joinDate: current.joinDate,
@@ -264,71 +304,105 @@ export default function StudentsPage() {
               ))}
             </select>
           </div>
-          <Button onClick={openAddModal} className="gap-2" disabled={!isActive}>
-            <Plus className="h-4 w-4" /> Add Student
-          </Button>
+          {isOwner && (
+            <Button onClick={openAddModal} className="gap-2" disabled={!isActive}>
+              <Plus className="h-4 w-4" /> Add Student
+            </Button>
+          )}
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
+          Error loading students: {error.message}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
           Loading students...
         </div>
       ) : (
-        <DataTable
-          columns={[
-            {
-              key: "name",
-              header: "Student Name",
-              render: (row) => (
-                <Link href={`/students/${row.id}`} className="text-sm font-medium text-foreground hover:underline">
-                  {row.name}
-                </Link>
-              ),
-            },
-            { key: "phone", header: "Phone" },
-            { key: "parentPhone", header: "Parent Phone", hideOnMobile: true },
-            {
-              key: "batchId",
-              header: "Batch",
-              render: (row) => batchNameById.get(row.batchId) ?? "Unknown",
-            },
-            {
-              key: "monthlyFee",
-              header: "Monthly Fee",
-              render: (row) => `₹${row.monthlyFee.toLocaleString()}`,
-            },
-            {
-              key: "joinDate",
-              header: "Join Date",
-              hideOnMobile: true,
-              render: (row) => new Date(row.joinDate).toLocaleDateString(),
-            },
-            {
-              key: "actions",
-              header: "Actions",
-              render: (row) => (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => openEditModal(row)}
-                    disabled={!isActive}
-                    className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => openDeleteConfirm(row)}
-                    disabled={!isActive}
-                    className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Delete
-                  </button>
-                </div>
-              ),
-            },
-          ]}
-          data={students}
-        />
+        <>
+          <DataTable
+            columns={[
+              {
+                key: "customId",
+                header: "Student ID",
+                render: (row) => (
+                  <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground ring-1 ring-inset ring-border">
+                    {row.customId || "—"}
+                  </span>
+                ),
+              },
+              {
+                key: "name",
+                header: "Student Name",
+                render: (row) => (
+                  <Link href={`/students/${row.id}`} className="text-sm font-medium text-foreground hover:underline">
+                    {row.name}
+                  </Link>
+                ),
+              },
+              { key: "phone", header: "Phone" },
+              { key: "parentPhone", header: "Parent Phone", hideOnMobile: true },
+              {
+                key: "batchId",
+                header: "Batch",
+                render: (row) => batchNameById.get(row.batchId) ?? "Unknown",
+              },
+              ...(isOwner ? [{
+                key: "monthlyFee",
+                header: "Monthly Fee",
+                render: (row: any) => `₹${row.monthlyFee.toLocaleString()}`,
+              }] : []),
+              {
+                key: "joinDate",
+                header: "Join Date",
+                hideOnMobile: true,
+                render: (row) => new Date(row.joinDate).toLocaleDateString(),
+              },
+              {
+                key: "actions",
+                header: "Actions",
+                render: (row) =>
+                  isOwner ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => openEditModal(row)}
+                        disabled={!isActive}
+                        className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => openDeleteConfirm(row)}
+                        disabled={!isActive}
+                        className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  ),
+              },
+            ]}
+            data={students}
+          />
+          {hasNextPage && (
+            <div className="flex justify-center mt-4">
+              <Button
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                isLoading={isFetchingNextPage}
+                variant="secondary"
+              >
+                {isFetchingNextPage ? "Loading more..." : "Load More"}
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       <Modal
@@ -363,17 +437,34 @@ export default function StudentsPage() {
             }}
           />
           <FormInput
-            label="Parent Phone"
-            placeholder="+91"
-            defaultValue={formRef.current.parentPhone}
-            error={formErrors.parentPhone}
+            label="Parent Name"
+            placeholder="Enter parent's name"
+            defaultValue={formRef.current.parentName}
+            error={formErrors.parentName}
             onChange={(event) => {
-              formRef.current.parentPhone = event.target.value;
-              if (formErrors.parentPhone) {
-                setFormErrors((prev) => ({ ...prev, parentPhone: undefined }));
+              formRef.current.parentName = event.target.value;
+              if (formErrors.parentName) {
+                setFormErrors((prev) => ({ ...prev, parentName: undefined }));
               }
             }}
           />
+          <div className="space-y-1">
+            <FormInput
+              label="Parent Phone"
+              placeholder="e.g. 9876543210"
+              defaultValue={formRef.current.parentPhone}
+              error={formErrors.parentPhone}
+              onChange={(event) => {
+                formRef.current.parentPhone = event.target.value;
+                if (formErrors.parentPhone) {
+                  setFormErrors((prev) => ({ ...prev, parentPhone: undefined }));
+                }
+              }}
+            />
+            <p className="text-[11px] text-muted-foreground/80 leading-tight">
+              Please provide an active WhatsApp number. Attendance alerts, exam marks, and fee reminders will be automatically routed to this number.
+            </p>
+          </div>
           <label className="block space-y-1 text-sm text-muted-foreground">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Batch

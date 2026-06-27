@@ -176,14 +176,26 @@ export default function TeachersPage() {
     setModalOpen(false);
   };
 
-  const handleDeactivate = async (teacher: Teacher) => {
+  const handleToggleStatus = (teacher: Teacher) => {
     if (!isActive) return;
-    const res = await updateStatus.mutateAsync({ id: teacher.id, payload: { status: "disabled" } });
-    if (!res || !res.ok) {
-      showErrorToast(res?.msg || "Failed to deactivate teacher");
-      return;
-    }
-    showSuccessToast(res.msg || "Teacher deactivated");
+    const isDisabling = teacher.status === "active";
+    const newStatus = isDisabling ? "disabled" : "active";
+    const actionWord = isDisabling ? "Deactivate" : "Activate";
+
+    openConfirm({
+      title: `${actionWord} Teacher`,
+      message: `Are you sure you want to ${actionWord.toLowerCase()} ${teacher.name}?`,
+      label: actionWord,
+      tone: isDisabling ? "danger" : "default",
+      onConfirm: async () => {
+        const res = await updateStatus.mutateAsync({ id: teacher.id, payload: { status: newStatus } });
+        if (!res || !res.ok) {
+          showErrorToast(res?.msg || `Failed to ${actionWord.toLowerCase()} teacher`);
+          return;
+        }
+        showSuccessToast(res.msg || `Teacher ${actionWord.toLowerCase()}d successfully`);
+      },
+    });
   };
 
   const handleResetPassword = async (teacher: Teacher) => {
@@ -216,16 +228,7 @@ export default function TeachersPage() {
 
   const rows = useMemo(() => teacherList as Teacher[], [teacherList]);
 
-  const batchesByTeacherId = useMemo(() => {
-    const map = new Map<string, string[]>();
-    batches.forEach((batch) => {
-      if (!batch.teacherId) return;
-      const next = map.get(batch.teacherId) ?? [];
-      next.push(batch.batchName);
-      map.set(batch.teacherId, next);
-    });
-    return map;
-  }, [batches]);
+
 
   const availableSubjects = useMemo(() => {
     const subjects = new Set<string>();
@@ -348,6 +351,15 @@ export default function TeachersPage() {
       ) : (
         <DataTable
           columns={[
+            {
+              key: "customId",
+              header: "Teacher ID",
+              render: (row) => (
+                <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground ring-1 ring-inset ring-border">
+                  {row.customId || "—"}
+                </span>
+              ),
+            },
             { key: "name", header: "Name" },
             { key: "phone", header: "Phone" },
             { key: "username", header: "Username" },
@@ -365,18 +377,7 @@ export default function TeachersPage() {
               header: "Salary",
               render: (row) => (row.salary ? `₹${row.salary.toLocaleString()}` : "—"),
             },
-            {
-              key: "batches",
-              header: "Batches",
-              render: (row) => {
-                const batchNames = batchesByTeacherId.get(row.id) ?? [];
-                return (
-                  <span className="text-xs text-muted-foreground">
-                    {batchNames.length > 0 ? batchNames.join(", ") : "—"}
-                  </span>
-                );
-              },
-            },
+
             {
               key: "status",
               header: "Status",
@@ -418,11 +419,11 @@ export default function TeachersPage() {
                     Reset Password
                   </button>
                   <button
-                    onClick={() => handleDeactivate(row)}
-                    disabled={!isActive || row.status === "disabled"}
+                    onClick={() => handleToggleStatus(row)}
+                    disabled={!isActive}
                     className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Deactivate
+                    {row.status === "active" ? "Deactivate" : "Activate"}
                   </button>
                 </div>
               ),
@@ -511,6 +512,18 @@ export default function TeachersPage() {
       <Modal open={viewOpen} onClose={() => setViewOpen(false)} title="Teacher Details">
         <div className="space-y-3 text-sm text-muted-foreground">
           <div>
+            <p className="text-xs uppercase tracking-wide">Teacher ID</p>
+            <p className="text-sm font-semibold text-foreground">
+              {selectedTeacher?.customId ? (
+                <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground ring-1 ring-inset ring-border">
+                  {selectedTeacher.customId}
+                </span>
+              ) : (
+                "—"
+              )}
+            </p>
+          </div>
+          <div>
             <p className="text-xs uppercase tracking-wide">Name</p>
             <p className="text-sm font-medium text-foreground">{selectedTeacher?.name ?? "—"}</p>
           </div>
@@ -536,14 +549,7 @@ export default function TeachersPage() {
               {selectedTeacher?.salary ? `₹${selectedTeacher.salary.toLocaleString()}` : "—"}
             </p>
           </div>
-          <div>
-            <p className="text-xs uppercase tracking-wide">Batches</p>
-            <p className="text-sm font-medium text-foreground">
-              {(selectedTeacher?.id && (batchesByTeacherId.get(selectedTeacher.id) ?? []).length > 0)
-                ? (batchesByTeacherId.get(selectedTeacher.id) ?? []).join(", ")
-                : "—"}
-            </p>
-          </div>
+
         </div>
         <div className="mt-4 flex justify-end">
           <Button variant="secondary" onClick={() => setViewOpen(false)}>

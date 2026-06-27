@@ -58,7 +58,7 @@ export const validateCreateAttendancePayload = (
       if (!mongoose.Types.ObjectId.isValid(record.studentId)) {
         throwError("Invalid studentId", StatusCode.BAD_REQUEST);
       }
-      if (!["present", "absent", "leave"].includes(record.status)) {
+      if (!["present", "absent", "leave", "half_day"].includes(record.status)) {
         throwError("Invalid attendance status", StatusCode.BAD_REQUEST);
       }
     });
@@ -71,7 +71,7 @@ export const validateCreateAttendancePayload = (
   if (!mongoose.Types.ObjectId.isValid(payload.studentId)) {
     throwError("Invalid studentId", StatusCode.BAD_REQUEST);
   }
-  if (!payload.status || !["present", "absent", "leave"].includes(payload.status)) {
+  if (!payload.status || !["present", "absent", "leave", "half_day"].includes(payload.status)) {
     throwError("Invalid attendance status", StatusCode.BAD_REQUEST);
   }
 };
@@ -79,11 +79,13 @@ export const validateCreateAttendancePayload = (
 export const validateAttendanceHistoryFilters = (query: {
   studentId?: string;
   batchId?: string;
+  subject?: string;
   dateFrom?: string;
   dateTo?: string;
 }): {
   studentId?: string;
   batchId?: string;
+  subject?: string;
   dateFrom?: string;
   dateTo?: string;
 } => {
@@ -108,6 +110,7 @@ export const validateAttendanceHistoryFilters = (query: {
   return {
     studentId: query.studentId,
     batchId: query.batchId,
+    subject: query.subject,
     dateFrom: query.dateFrom,
     dateTo: query.dateTo,
   };

@@ -13,7 +13,8 @@ export interface IAttendanceService {
   getAttendanceByBatchAndDate(
     centerId: string,
     batchId: string,
-    date: string
+    date: string,
+    subject?: string
   ): Promise<AttendanceByDateDTO>;
   saveAttendance(centerId: string, markedBy: string, payload: CreateAttendanceDTO): Promise<void>;
   getAttendanceHistory(
@@ -21,6 +22,7 @@ export interface IAttendanceService {
     filters: {
       studentId?: string;
       batchId?: string;
+      subject?: string;
       dateFrom?: string;
       dateTo?: string;
     }
@@ -30,7 +32,8 @@ export interface IAttendanceService {
       studentId: string;
       batchId: string;
       date: string;
-      status: "present" | "absent" | "leave";
+      subject?: string;
+      status: "present" | "absent" | "leave" | "half_day";
       markedBy?: string;
       createdAt?: Date;
       updatedAt?: Date;

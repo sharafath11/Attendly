@@ -17,8 +17,8 @@ export const attendanceApi = {
     getRequest<ApiResponse<BatchAttendanceSummary>>(`/attendance/batch/${batchId}/summary`),
   getLowAttendance: (batchId: string) =>
     getRequest<ApiResponse<LowAttendanceStudent[]>>(`/attendance/batch/${batchId}/low-attendance`),
-  getAttendanceByDate: (batchId: string, date: string) =>
-    getRequest<ApiResponse<AttendanceByDate>>("/attendance", { batchId, date }),
+  getAttendanceByDate: (batchId: string, date: string, subject?: string) =>
+    getRequest<ApiResponse<AttendanceByDate>>("/attendance", { batchId, date, ...(subject ? { subject } : {}) }),
   getAttendanceHistory: (filters?: AttendanceHistoryFilters) =>
     getRequest<ApiResponse<AttendanceHistoryRecord[]>>("/attendance/history", filters),
   saveAttendance: (payload: CreateAttendancePayload) => postRequest<ApiResponse<any>>("/attendance", payload),

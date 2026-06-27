@@ -49,3 +49,24 @@ if (!hasRedisConfig) {
 }
 
 export { redis };
+
+// ─── BullMQ connection helper ─────────────────────────────────────────────────
+
+/**
+ * Returns a plain connection-options object suitable for BullMQ Queue / Worker.
+ * BullMQ manages its own ioredis instance; we do NOT reuse the singleton above.
+ */
+export function getRedisConnectionOptions(): {
+  host: string;
+  port: number;
+  password?: string;
+} | { url: string } {
+  if (process.env.REDIS_URL) {
+    return { url: process.env.REDIS_URL } as { url: string };
+  }
+  return {
+    host: process.env.REDIS_HOST ?? "127.0.0.1",
+    port: Number(process.env.REDIS_PORT) || 6379,
+    password: process.env.REDIS_PASSWORD || undefined,
+  };
+}

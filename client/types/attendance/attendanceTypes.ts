@@ -32,18 +32,21 @@ export type LowAttendanceStudent = {
 
 export type AttendanceRecord = {
   studentId: string;
-  status: "present" | "absent" | "leave";
+  status: "present" | "absent" | "leave" | "half_day";
+  subject?: string;
 };
 
 export type AttendanceByDate = {
   batchId: string;
   date: string;
+  subject?: string;
   records: AttendanceRecord[];
 };
 
 export type CreateAttendancePayload = {
   batchId: string;
   date: string;
+  subject?: string;
   records: AttendanceRecord[];
 };
 
@@ -52,7 +55,8 @@ export type AttendanceHistoryRecord = {
   studentId: string;
   batchId: string;
   date: string;
-  status: "present" | "absent" | "leave";
+  subject?: string;
+  status: "present" | "absent" | "leave" | "half_day";
   markedBy?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -74,6 +78,7 @@ export type AttendanceHistoryRecord = {
 export type AttendanceHistoryFilters = {
   studentId?: string;
   batchId?: string;
+  subject?: string;
   dateFrom?: string;
   dateTo?: string;
 };

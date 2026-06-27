@@ -15,4 +15,8 @@ export const userAuthMethods = {
   googleAuth: (payload: GoogleAuthPayload) => post("/auth/google", payload, { showToast: false }),
   me: () => get("/auth/me"),
   logout: () => post("/auth/logout", {}),
+  changePassword: (payload: any) => post("/auth/change-password", payload),
+  updateProfile: (payload: { name?: string; phone?: string; centerName?: string; mediums?: string[]; sessions?: string[] }) => patch("/auth/profile", payload),
+  forgotPassword: (payload: { email: string }) => post("/auth/forgot-password", payload),
+  resetPassword: (payload: { email: string; otp: string; newPassword: string }) => post("/auth/reset-password", payload),
 }

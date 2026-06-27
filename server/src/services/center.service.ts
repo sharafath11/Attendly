@@ -142,6 +142,7 @@ export class CenterService implements ICenterService {
   }
 
   async getMyCenter(centerId: string): Promise<{
+    name?: string | null;
     subscriptionStatus: string;
     subscriptionStartDate?: Date | null;
     subscriptionEndDate?: Date | null;
@@ -154,6 +155,7 @@ export class CenterService implements ICenterService {
       throwError("Center not found", StatusCode.NOT_FOUND);
     }
     return {
+      name: center.name,
       subscriptionStatus: center.subscriptionStatus,
       subscriptionStartDate: center.subscriptionStartDate ?? null,
       subscriptionEndDate: center.subscriptionEndDate ?? null,

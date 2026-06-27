@@ -5,11 +5,12 @@ import { CreateStudentDTO, StudentQueryDTO, UpdateStudentDTO } from "../dtos/stu
 import { StatusCode } from "../enums/statusCode";
 
 const PHONE_REGEX = /^\+?[1-9]\d{7,14}$/;
+const STRICT_10_DIGIT_PHONE_REGEX = /^\d{10}$/;
 
 const isValidDate = (value: string | Date) => !Number.isNaN(Date.parse(String(value)));
 
 export const validateCreateStudent = (payload: CreateStudentDTO): void => {
-  if (!payload.name || !payload.phone || !payload.batchId || payload.monthlyFee === undefined || !payload.joinDate) {
+  if (!payload.name || !payload.phone || !payload.parentName || !payload.parentPhone || !payload.batchId || payload.monthlyFee === undefined || !payload.joinDate) {
     throwError(MESSAGES.COMMON.MISSING_FIELDS, StatusCode.BAD_REQUEST);
   }
 
@@ -17,8 +18,8 @@ export const validateCreateStudent = (payload: CreateStudentDTO): void => {
     throwError("Invalid phone number", StatusCode.BAD_REQUEST);
   }
 
-  if (payload.parentPhone && !PHONE_REGEX.test(payload.parentPhone)) {
-    throwError("Invalid parent phone number", StatusCode.BAD_REQUEST);
+  if (!STRICT_10_DIGIT_PHONE_REGEX.test(payload.parentPhone)) {
+    throwError("Invalid parent phone number. Must be exactly 10 digits.", StatusCode.BAD_REQUEST);
   }
 
   if (!mongoose.Types.ObjectId.isValid(payload.batchId)) {
@@ -39,8 +40,8 @@ export const validateUpdateStudent = (payload: UpdateStudentDTO): void => {
     throwError("Invalid phone number", StatusCode.BAD_REQUEST);
   }
 
-  if (payload.parentPhone && !PHONE_REGEX.test(payload.parentPhone)) {
-    throwError("Invalid parent phone number", StatusCode.BAD_REQUEST);
+  if (payload.parentPhone && !STRICT_10_DIGIT_PHONE_REGEX.test(payload.parentPhone)) {
+    throwError("Invalid parent phone number. Must be exactly 10 digits.", StatusCode.BAD_REQUEST);
   }
 
   if (payload.batchId && !mongoose.Types.ObjectId.isValid(payload.batchId)) {
@@ -57,10 +58,10 @@ export const validateUpdateStudent = (payload: UpdateStudentDTO): void => {
 };
 
 export const validateStudentsQuery = (query: StudentQueryDTO): StudentQueryDTO => {
-  const page = query.page ? Number(query.page) : 1;
+  const page = query.page ? Number(query.page) : undefined;
   const limit = query.limit ? Number(query.limit) : 10;
 
-  if (Number.isNaN(page) || page <= 0) {
+  if (page !== undefined && (Number.isNaN(page) || page <= 0)) {
     throwError("page must be a positive number", StatusCode.BAD_REQUEST);
   }
 
@@ -73,10 +74,13 @@ export const validateStudentsQuery = (query: StudentQueryDTO): StudentQueryDTO =
   }
 
   return {
-    search: query.search,
+    search: query.search ? String(query.search).trim() : undefined,
     batchId: query.batchId,
     session: query.session,
     page,
     limit,
+    cursor: query.cursor ? String(query.cursor) : undefined,
+    sortBy: query.sortBy ? String(query.sortBy) : undefined,
+    sortOrder: query.sortOrder === "asc" || query.sortOrder === "desc" ? query.sortOrder : undefined,
   };
 };

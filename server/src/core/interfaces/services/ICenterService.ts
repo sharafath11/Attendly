@@ -7,6 +7,7 @@ export interface ICenterService {
   resendCenterRegistrationOtp(email: string): Promise<void>;
   getCenterStatus(centerId: string): Promise<{ subscriptionStatus: string }>;
   getMyCenter(centerId: string): Promise<{
+    name?: string | null;
     subscriptionStatus: string;
     subscriptionStartDate?: Date | null;
     subscriptionEndDate?: Date | null;

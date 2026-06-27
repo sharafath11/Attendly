@@ -326,23 +326,29 @@ export class AttendanceRepository
   async getAttendanceByBatchAndDate(
     centerId: string,
     batchId: string,
-    date: Date
+    date: Date,
+    subject?: string
   ): Promise<AttendanceRecordDTO[]> {
     try {
       const centerObjectId = new mongoose.Types.ObjectId(centerId);
+      const filter: Record<string, unknown> = {
+        $or: [{ centerId: centerObjectId }, { userId: centerObjectId }],
+        batchId: new mongoose.Types.ObjectId(batchId),
+        date,
+      };
+      if (subject) {
+        filter.subject = subject;
+      }
       const records = await this.model
-        .find({
-          $or: [{ centerId: centerObjectId }, { userId: centerObjectId }],
-          batchId: new mongoose.Types.ObjectId(batchId),
-          date,
-        })
-        .select({ studentId: 1, status: 1 })
+        .find(filter)
+        .select({ studentId: 1, status: 1, subject: 1 })
         .lean()
         .exec();
 
       return records.map((record) => ({
         studentId: record.studentId.toString(),
         status: record.status as "present" | "absent" | "leave",
+        subject: record.subject,
       }));
     } catch (error) {
       throw this.handleError(error, MESSAGES.REPOSITORY.FIND_ALL_ERROR);
@@ -354,7 +360,8 @@ export class AttendanceRepository
     batchId: string,
     date: Date,
     records: AttendanceRecordDTO[],
-    markedBy: string
+    markedBy: string,
+    subject?: string
   ): Promise<void> {
     try {
       const now = new Date();
@@ -369,11 +376,13 @@ export class AttendanceRepository
             batchId: batchObjectId,
             studentId: new mongoose.Types.ObjectId(record.studentId),
             date,
+            ...(subject ? { subject } : {}),
           },
           update: {
             $set: {
               status: record.status,
               markedBy: markedByObjectId,
+              ...(subject ? { subject } : {}),
             },
             $setOnInsert: {
               centerId: centerObjectId,
@@ -401,7 +410,8 @@ export class AttendanceRepository
     date: Date,
     status: AttendanceRecordDTO["status"],
     markedBy: string,
-    batchId?: string
+    batchId?: string,
+    subject?: string
   ): Promise<void> {
     try {
       const centerObjectId = new mongoose.Types.ObjectId(centerId);
@@ -417,9 +427,15 @@ export class AttendanceRepository
       if (batchId) {
         update.batchId = new mongoose.Types.ObjectId(batchId);
       }
+      if (subject) {
+        update.subject = subject;
+      }
+
+      const filterKey: Record<string, unknown> = { studentId: studentObjectId, date, centerId: centerObjectId };
+      if (subject) filterKey.subject = subject;
 
       await this.model.updateOne(
-        { studentId: studentObjectId, date },
+        filterKey,
         { $set: update, $setOnInsert: { createdAt: new Date() } },
         { upsert: true }
       );
@@ -442,7 +458,8 @@ export class AttendanceRepository
       studentId: string;
       batchId: string;
       date: string;
-      status: "present" | "absent" | "leave";
+      subject?: string;
+      status: "present" | "absent" | "leave" | "half_day";
       markedBy?: string;
       createdAt?: Date;
       updatedAt?: Date;
@@ -488,7 +505,8 @@ export class AttendanceRepository
           studentId: student?._id?.toString?.() ?? record.studentId.toString(),
           batchId: batch?._id?.toString?.() ?? record.batchId.toString(),
           date: record.date.toISOString().split("T")[0],
-          status: record.status as "present" | "absent" | "leave",
+          subject: record.subject,
+          status: record.status as "present" | "absent" | "leave" | "half_day",
           markedBy: marker?._id?.toString?.() ?? record.markedBy?.toString(),
           createdAt: record.createdAt,
           updatedAt: record.updatedAt,

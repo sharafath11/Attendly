@@ -5,6 +5,7 @@ import { TYPES } from "../core/types";
 import { IAuthController } from "../core/interfaces/controllers/IAuth.Controller";
 import { authenticateToken } from "../middleware/authenticateToken";
 import { sendResponse } from "../utils/response";
+import { InvitationController } from "../controller/invitation.controller";
 
 const router = express.Router();
 
@@ -31,6 +32,14 @@ router.post("/verify-otp", authController.verifyOtp.bind(authController));
 router.post("/resend-otp", authController.resendOtp.bind(authController));
 router.post("/google", authController.googleAuth.bind(authController));
 router.get("/me",authenticateToken,authController.getCurrentUser.bind(authController))
+router.post("/change-password", authenticateToken, authController.changePassword.bind(authController));
+router.patch("/profile", authenticateToken, authController.updateProfile.bind(authController));
 router.post("/logout",authenticateToken,authController.logout.bind(authController))
 router.post("/refresh-token",authController.refeshToken.bind(authController))
+router.post("/forgot-password", authController.forgotPassword.bind(authController));
+router.post("/reset-password", authController.resetPassword.bind(authController));
+const invitationController = new InvitationController();
+router.get("/validate-invite-token", invitationController.validateInviteToken.bind(invitationController));
+router.post("/complete-invite-signup", invitationController.completeInviteSignup.bind(invitationController));
+
 export default router;

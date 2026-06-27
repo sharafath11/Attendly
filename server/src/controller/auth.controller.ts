@@ -203,4 +203,57 @@ export class AuthController implements IAuthController {
       handleControllerError(res, error);
     }
   }
+
+  async changePassword(req: Request, res: Response): Promise<void> {
+    try {
+      validateBodyFields(req, ["currentPassword", "newPassword"]);
+      const { currentPassword, newPassword } = req.body;
+      const userId = (req as any).user.id;
+
+      await this._authServices.changePassword(userId, currentPassword, newPassword);
+
+      sendResponse(res, StatusCode.OK, "Password changed successfully", true);
+    } catch (error) {
+      handleControllerError(res, error);
+    }
+  }
+
+  async updateProfile(req: Request, res: Response): Promise<void> {
+    try {
+      const { name, phone, centerName, mediums, sessions } = req.body;
+      const userId = (req as any).user.id;
+
+      await this._authServices.updateProfile(userId, name, phone, centerName, mediums, sessions);
+
+      sendResponse(res, StatusCode.OK, "Profile updated successfully", true);
+    } catch (error) {
+      handleControllerError(res, error);
+    }
+  }
+
+  async forgotPassword(req: Request, res: Response): Promise<void> {
+    try {
+      validateBodyFields(req, ["email"]);
+      const { email } = req.body;
+      
+      await this._authServices.forgotPassword(email);
+      
+      sendResponse(res, StatusCode.OK, "Password reset OTP sent to email", true);
+    } catch (error) {
+      handleControllerError(res, error);
+    }
+  }
+
+  async resetPassword(req: Request, res: Response): Promise<void> {
+    try {
+      validateBodyFields(req, ["email", "otp", "newPassword"]);
+      const { email, otp, newPassword } = req.body;
+      
+      await this._authServices.resetPassword(email, otp, newPassword);
+      
+      sendResponse(res, StatusCode.OK, "Password reset successfully", true);
+    } catch (error) {
+      handleControllerError(res, error);
+    }
+  }
 }

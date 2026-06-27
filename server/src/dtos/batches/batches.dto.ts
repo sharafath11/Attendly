@@ -5,7 +5,6 @@ export interface CreateBatchDTO {
   session: string;
   scheduleTime: string;
   days: string[];
-  teacherId?: string | null;
 }
 
 export interface UpdateBatchDTO {
@@ -15,7 +14,6 @@ export interface UpdateBatchDTO {
   session?: string;
   scheduleTime?: string;
   days?: string[];
-  teacherId?: string | null;
 }
 
 export interface BatchResponseDTO {
@@ -26,7 +24,6 @@ export interface BatchResponseDTO {
   session: string;
   scheduleTime: string;
   days: string[];
-  teacherId?: string | null;
   userId: string;
   studentCount: number;
   createdAt: Date;

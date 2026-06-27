@@ -37,3 +37,7 @@ Thumbs.db
 .parcel-cache/
 turbo/
 .vercel/
+
+# WhatsApp Auth Data
+server/whatsapp-auth/
+whatsapp-auth/

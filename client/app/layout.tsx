@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import ToastProvider from "@/components/providers/ToastProvider";
 import ThemeProvider from "@/components/providers/ThemeProvider";
 import QueryProvider from "@/components/providers/QueryProvider";
+import NetworkProvider from "@/components/providers/NetworkProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -29,6 +30,7 @@ export default function RootLayout({
       <body className="font-sans antialiased" suppressHydrationWarning>
         <ThemeProvider>
           <QueryProvider>
+            <NetworkProvider />
             <ToastProvider />
             {children}
           </QueryProvider>

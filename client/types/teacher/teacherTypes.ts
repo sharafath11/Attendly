@@ -2,6 +2,7 @@ export type Teacher = {
   id: string;
   name: string;
   username: string;
+  customId?: string;
   phone?: string;
   subjects?: string[];
   salary?: number;

@@ -10,7 +10,7 @@ import { UserModel } from "../../models/user.Model";
 export interface AuthenticatedRequest extends Request {
   userId?: string;
   authUserId?: string;
-  userRole?: "center_owner" | "teacher" | "super_admin";
+  userRole?: "center_owner" | "teacher" | "super_admin" | "parent";
   centerId?: string;
   role?: string;
   user?: TokenPayload;
@@ -27,7 +27,7 @@ const normalizeCenterId = (user: { _id: any; centerId?: string | { toString: () 
 };
 
 export const requireRole =
-  (roles: Array<"center_owner" | "teacher" | "super_admin">) =>
+  (roles: Array<"center_owner" | "teacher" | "super_admin" | "parent">) =>
   async (req: Request, res: Response, next: NextFunction) => {
     const accessToken = req.cookies?.token;
 
@@ -63,11 +63,8 @@ export const requireRole =
       }
 
       const role = user.role ?? "center_owner";
-      if (role === "parent") {
-        return sendResponse(res, StatusCode.FORBIDDEN, MESSAGES.COMMON.ACCESS_DENIED, false);
-      }
       const allowedRoles = roles;
-      if (!allowedRoles.includes(role as "center_owner" | "teacher" | "super_admin")) {
+      if (!allowedRoles.includes(role as any)) {
         return sendResponse(res, StatusCode.FORBIDDEN, MESSAGES.COMMON.ACCESS_DENIED, false);
       }
 

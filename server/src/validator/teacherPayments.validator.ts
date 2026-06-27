@@ -3,34 +3,11 @@ import { throwError } from "../utils/response";
 import { StatusCode } from "../enums/statusCode";
 import { CreateTeacherPaymentDTO, TeacherPaymentFiltersDTO } from "../dtos/teacherPayments/teacherPayments.dto";
 
-const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-
-const normalizeMonth = (value: string): string => {
-  const trimmed = value.trim();
-  const match = MONTHS.find((month) => month.toLowerCase() === trimmed.toLowerCase());
-  if (!match) {
-    throwError("Invalid month", StatusCode.BAD_REQUEST);
-  }
-  return match;
-};
-
+const isValidMonth = (value: number) => Number.isInteger(value) && value >= 1 && value <= 12;
 const isValidYear = (value: number) => Number.isInteger(value) && value >= 2000 && value <= 2100;
 
 export const validateCreateTeacherPayment = (payload: CreateTeacherPaymentDTO): CreateTeacherPaymentDTO => {
-  if (!payload.teacherId || !payload.amount || !payload.month || !payload.year) {
+  if (!payload.teacherId || !payload.amount || payload.month === undefined || !payload.year) {
     throwError("teacherId, amount, month and year are required", StatusCode.BAD_REQUEST);
   }
 
@@ -42,13 +19,18 @@ export const validateCreateTeacherPayment = (payload: CreateTeacherPaymentDTO): 
     throwError("amount must be a positive number", StatusCode.BAD_REQUEST);
   }
 
+  const parsedMonth = Number(payload.month);
+  if (!isValidMonth(parsedMonth)) {
+    throwError("Invalid month (must be 1-12)", StatusCode.BAD_REQUEST);
+  }
+
   if (!isValidYear(payload.year)) {
     throwError("Invalid year", StatusCode.BAD_REQUEST);
   }
 
   return {
     ...payload,
-    month: normalizeMonth(payload.month),
+    month: parsedMonth,
     notes: payload.notes?.trim() || undefined,
   };
 };
@@ -61,8 +43,12 @@ export const validateTeacherPaymentFilters = (query: TeacherPaymentFiltersDTO): 
     }
     filters.teacherId = query.teacherId;
   }
-  if (query.month) {
-    filters.month = normalizeMonth(query.month);
+  if (query.month !== undefined) {
+    const parsedMonth = Number(query.month);
+    if (!isValidMonth(parsedMonth)) {
+      throwError("Invalid month (must be 1-12)", StatusCode.BAD_REQUEST);
+    }
+    filters.month = parsedMonth;
   }
   if (query.year !== undefined) {
     const parsedYear = Number(query.year);

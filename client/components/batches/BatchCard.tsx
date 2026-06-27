@@ -10,6 +10,7 @@ interface BatchCardProps {
   onMarkAttendance: (batch: Batch) => void;
   actionsDisabled?: boolean;
   attendanceDisabled?: boolean;
+  isOwner?: boolean;
 }
 
 const formatDays = (days: string[]) => days.join(" ");
@@ -22,6 +23,7 @@ export default function BatchCard({
   onMarkAttendance,
   actionsDisabled = false,
   attendanceDisabled = false,
+  isOwner = false,
 }: BatchCardProps) {
   return (
     <div
@@ -48,39 +50,39 @@ export default function BatchCard({
         <p className="text-foreground">{batch.medium} Medium</p>
         <p className="text-foreground">{batch.session} Session</p>
         <p>
-          <span className="font-medium text-foreground">Teacher:</span>{" "}
-          {batch.teacherName ? batch.teacherName : "Unassigned"}
-        </p>
-        <p>
           <span className="font-medium text-foreground">Schedule:</span> {batch.scheduleTime} |{" "}
           {formatDays(batch.days)}
         </p>
       </div>
       <div className="mt-4 flex gap-2">
-        <button
-          onClick={(event) => {
-            event.stopPropagation();
-            if (!actionsDisabled) {
-              onEdit(batch);
-            }
-          }}
-          disabled={actionsDisabled}
-          className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Edit
-        </button>
-        <button
-          onClick={(event) => {
-            event.stopPropagation();
-            if (!actionsDisabled) {
-              onDelete(batch);
-            }
-          }}
-          disabled={actionsDisabled}
-          className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Delete
-        </button>
+        {isOwner && (
+          <>
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                if (!actionsDisabled) {
+                  onEdit(batch);
+                }
+              }}
+              disabled={actionsDisabled}
+              className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Edit
+            </button>
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                if (!actionsDisabled) {
+                  onDelete(batch);
+                }
+              }}
+              disabled={actionsDisabled}
+              className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Delete
+            </button>
+          </>
+        )}
         <button
           onClick={(event) => {
             event.stopPropagation();
@@ -94,3 +96,4 @@ export default function BatchCard({
     </div>
   );
 }
+

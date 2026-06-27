@@ -11,8 +11,8 @@ const defaultOptions: ApiOptions = {
 };
 
 const handleApiError = (error: any, options: ApiOptions) => {
-  console.error("API Error:", error);
-  
+  // Suppress console.error in dev to prevent Next.js error overlay for expected API errors
+
   if (!options.showToast) return;
 
   const message = error?.response?.data?.msg || error.message || "Request failed";

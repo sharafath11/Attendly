@@ -68,10 +68,21 @@ export function startAutomationJobs() {
     const year = now.getFullYear();
     const dayOfMonth = istCalendarDay();
 
+    const isLastDayOfMonth = () => {
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const s = tomorrow.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+      const tomorrowDay = Number(s.split("-")[2]);
+      return tomorrowDay === 1;
+    };
+
     for (const s of settings) {
       const centerId = s.centerId.toString();
       const center = await CenterModel.findById(centerId).lean().exec();
       if (!center || center.subscriptionStatus !== "active" || center.blocked) continue;
+
+      const targetDays = s.feeReminderDays && s.feeReminderDays.length > 0 ? s.feeReminderDays : [5, 10, 25];
+      const isTodayScheduled = targetDays.includes(dayOfMonth) || (dayOfMonth >= 28 && isLastDayOfMonth() && targetDays.includes(31));
+      if (!isTodayScheduled) continue;
 
       const pending = await FeeModel.find({
         centerId: new mongoose.Types.ObjectId(centerId),
@@ -81,9 +92,6 @@ export function startAutomationJobs() {
       })
         .lean()
         .exec();
-
-      const remindFromDay = Math.max(1, 28 - (s.reminderDaysBefore ?? 3));
-      if (dayOfMonth < remindFromDay) continue;
 
       for (const fee of pending) {
         await notifications.sendFeeReminder(centerId, fee.studentId.toString());

@@ -19,20 +19,6 @@ const ensureStringArray = (value: unknown): string[] => {
   return days;
 };
 
-const normalizeOptionalObjectId = (value: unknown): string | null | undefined => {
-  if (value === undefined) return undefined;
-  if (value === null) return null;
-
-  const normalized = String(value).trim();
-  if (!normalized) return null;
-
-  if (!mongoose.Types.ObjectId.isValid(normalized)) {
-    throwError("teacherId must be a valid id", StatusCode.BAD_REQUEST);
-  }
-
-  return normalized;
-};
-
 export const validateCreateBatch = (payload: CreateBatchDTO): CreateBatchDTO => {
   if (
     !isNonEmptyString(payload.batchName) ||
@@ -45,8 +31,6 @@ export const validateCreateBatch = (payload: CreateBatchDTO): CreateBatchDTO => 
     throwError(MESSAGES.COMMON.MISSING_FIELDS, StatusCode.BAD_REQUEST);
   }
 
-  const teacherId = normalizeOptionalObjectId(payload.teacherId);
-
   return {
     batchName: payload.batchName.trim(),
     classLevel: payload.classLevel.trim(),
@@ -54,7 +38,6 @@ export const validateCreateBatch = (payload: CreateBatchDTO): CreateBatchDTO => 
     session: payload.session.trim(),
     scheduleTime: payload.scheduleTime.trim(),
     days: ensureStringArray(payload.days),
-    teacherId,
   };
 };
 
@@ -98,10 +81,6 @@ export const validateUpdateBatch = (payload: UpdateBatchDTO): UpdateBatchDTO => 
 
   if (payload.days !== undefined) {
     updated.days = ensureStringArray(payload.days);
-  }
-
-  if (payload.teacherId !== undefined) {
-    updated.teacherId = normalizeOptionalObjectId(payload.teacherId);
   }
 
   return updated;

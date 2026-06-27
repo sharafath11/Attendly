@@ -63,6 +63,9 @@ const notificationSchema = new Schema<NotificationDocument>(
 notificationSchema.index({ centerId: 1, parentUserId: 1, createdAt: -1 });
 notificationSchema.index({ centerId: 1, createdAt: -1 });
 
+// TTL index to automatically prune notifications older than 90 days
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7776000 });
+
 export const NotificationModel: Model<NotificationDocument> = mongoose.model<NotificationDocument>(
   "Notification",
   notificationSchema

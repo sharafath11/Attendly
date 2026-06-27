@@ -60,11 +60,14 @@ export default function TeacherPaymentsPage() {
   const [yearFilter, setYearFilter] = useState<string>(String(getCurrentYear()));
 
   const filters = useMemo(
-    () => ({
-      teacherId: teacherFilter === "All" ? undefined : teacherFilter,
-      month: monthFilter === "All" ? undefined : monthFilter,
-      year: yearFilter === "All" ? undefined : Number(yearFilter),
-    }),
+    () => {
+      const monthIdx = monthNames.indexOf(monthFilter);
+      return {
+        teacherId: teacherFilter === "All" ? undefined : teacherFilter,
+        month: monthFilter === "All" || monthIdx === -1 ? undefined : monthIdx + 1,
+        year: yearFilter === "All" ? undefined : Number(yearFilter),
+      };
+    },
     [teacherFilter, monthFilter, yearFilter]
   );
 
@@ -80,10 +83,12 @@ export default function TeacherPaymentsPage() {
   };
 
   const handleSubmit = async () => {
+    const monthIndex = monthNames.indexOf(formRef.current.month);
+    const monthNum = monthIndex !== -1 ? monthIndex + 1 : new Date().getMonth() + 1;
     const payload: CreateTeacherPaymentPayload = {
       teacherId: formRef.current.teacherId,
       amount: Number(formRef.current.amount),
-      month: formRef.current.month,
+      month: monthNum,
       year: Number(formRef.current.year),
       notes: formRef.current.notes.trim() || undefined,
     };
@@ -112,7 +117,7 @@ export default function TeacherPaymentsPage() {
     }
     const csvRows = rows.map((payment) => ({
       Teacher: payment.teacher?.name ?? "",
-      Month: payment.month,
+      Month: monthNames[payment.month - 1] ?? payment.month,
       Year: payment.year,
       Amount: payment.amount,
       PaidDate: payment.paidDate ? new Date(payment.paidDate).toLocaleDateString() : "",
@@ -191,7 +196,11 @@ export default function TeacherPaymentsPage() {
               header: "Teacher",
               render: (row) => row.teacher?.name ?? "—",
             },
-            { key: "month", header: "Month" },
+            {
+              key: "month",
+              header: "Month",
+              render: (row) => monthNames[row.month - 1] ?? row.month,
+            },
             { key: "year", header: "Year" },
             {
               key: "amount",

@@ -38,6 +38,8 @@ export class AdminService implements IAdminService {
       phone: center.phone,
       address: center.address,
       medium: center.medium,
+      mediums: center.mediums,
+      sessions: center.sessions,
       status: center.status,
       planType: center.planType,
       teacherLimit: center.teacherLimit,

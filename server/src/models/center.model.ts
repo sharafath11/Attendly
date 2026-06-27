@@ -8,7 +8,9 @@ export interface ICenter {
   email: string;
   phone?: string;
   address?: string;
-  medium?: "English" | "Malayalam";
+  medium?: "English" | "Malayalam" | string;
+  mediums?: string[];
+  sessions?: string[];
   status?: "pending" | "verified" | "rejected";
   planType?: "basic" | "pro";
   teacherLimit?: number;
@@ -22,6 +24,7 @@ export interface ICenter {
   planName?: string | null;
   monthlyFee?: number | null;
   lastPaymentDate?: Date | null;
+  whatsappStatus?: "Connected" | "Disconnected";
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -34,7 +37,9 @@ const centerSchema: Schema<CenterDocument> = new Schema(
     email: { type: String, required: true, lowercase: true, trim: true },
     phone: { type: String },
     address: { type: String },
-    medium: { type: String, enum: ["English", "Malayalam"] },
+    medium: { type: String },
+    mediums: { type: [String], default: ["English", "Malayalam"] },
+    sessions: { type: [String], default: ["Morning", "Evening"] },
     status: { type: String, enum: ["pending", "verified", "rejected"], default: "pending" },
     planType: { type: String, enum: ["basic", "pro"] },
     teacherLimit: { type: Number },
@@ -54,6 +59,7 @@ const centerSchema: Schema<CenterDocument> = new Schema(
     planName: { type: String },
     monthlyFee: { type: Number },
     lastPaymentDate: { type: Date },
+    whatsappStatus: { type: String, enum: ["Connected", "Disconnected"], default: "Disconnected" },
   },
   { timestamps: true }
 );

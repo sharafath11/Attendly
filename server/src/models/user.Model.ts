@@ -15,11 +15,18 @@ const userSchema: Schema<IUser> = new Schema({
     centerId: { type: Schema.Types.ObjectId, ref: "Center", index: true },
     position: { type: String },
     status: { type: String, enum: ["active", "pending", "disabled"], default: "active" },
+    customId: { type: String, trim: true },
     /** Parent-facing display name (optional, for parent role) */
     parentDisplayName: { type: String, trim: true },
     /** Optional contact email for parent role (in addition to login email) */
     parentContactEmail: { type: String, trim: true, lowercase: true },
 }, { timestamps: true })
+
+// Enforce unique custom ID per center for non-owners/teachers/parents
+userSchema.index(
+  { centerId: 1, customId: 1 },
+  { unique: true, partialFilterExpression: { customId: { $type: "string" } } }
+);
 
 // Enforce one center owner per center.
 userSchema.index(

@@ -252,4 +252,89 @@ async signup(data: { name: string; email: string; password: string }):Promise<vo
       throwError(MESSAGES.AUTH.INVALID_GOOGLE_CREDENTIALS);
     }
   }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await this._authRepo.findById(userId);
+    if (!user) throwError("User not found", StatusCode.NOT_FOUND);
+
+    if (!user.password) {
+      throwError("This account uses social sign-in. Password cannot be changed.", StatusCode.BAD_REQUEST);
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      throwError("Incorrect current password", StatusCode.BAD_REQUEST);
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this._authRepo.update(userId, { password: hashedPassword });
+  }
+
+  async updateProfile(userId: string, name?: string, phone?: string, centerName?: string, mediums?: string[], sessions?: string[]): Promise<void> {
+    const user = await this._authRepo.findById(userId);
+    if (!user) throwError("User not found", StatusCode.NOT_FOUND);
+
+    const updateData: Partial<IUser> = {};
+    if (name !== undefined) updateData.name = name;
+    if (phone !== undefined) updateData.phone = phone;
+
+    if (Object.keys(updateData).length > 0) {
+      await this._authRepo.update(userId, updateData);
+    }
+
+    if (user.role === "center_owner") {
+      const targetCenterId = user.centerId || user._id;
+      const centerUpdate: any = {};
+      if (centerName !== undefined) centerUpdate.name = centerName;
+      if (mediums !== undefined) centerUpdate.mediums = mediums;
+      if (sessions !== undefined) centerUpdate.sessions = sessions;
+      if (Object.keys(centerUpdate).length > 0) {
+        await CenterModel.updateOne(
+          { _id: targetCenterId },
+          { $set: centerUpdate }
+        );
+      }
+    }
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this._authRepo.findOne({ email });
+    if (!user) {
+      throwError("User not found with this email", StatusCode.NOT_FOUND);
+    }
+
+    const otp = generateOtp();
+    const redisKey = `otp:forgot:${email}`;
+    const existingOtp = await redis.get(redisKey);
+    if (existingOtp) {
+      throwError("OTP already sent. Please wait before requesting another.", StatusCode.TOO_MANY_REQUESTS);
+    }
+
+    await redis.set(redisKey, otp, "EX", OTP_TTL_SECONDS);
+    await sendEmailOtp(email, otp);
+  }
+
+  async resetPassword(email: string, otp: string, newPassword: string): Promise<void> {
+    const redisKey = `otp:forgot:${email}`;
+    const storedOtp = await redis.get(redisKey);
+
+    if (!storedOtp) {
+      throwError("OTP expired or invalid", StatusCode.BAD_REQUEST);
+    }
+
+    if (storedOtp !== otp) {
+      throwError("Invalid OTP", StatusCode.BAD_REQUEST);
+    }
+
+    const user = await this._authRepo.findOne({ email });
+    if (!user) {
+      throwError("User not found", StatusCode.NOT_FOUND);
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this._authRepo.update(user._id as unknown as string, { password: hashedPassword });
+    
+    // Clear OTP after successful reset
+    await redis.del(redisKey);
+  }
 }

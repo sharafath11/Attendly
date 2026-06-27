@@ -7,6 +7,9 @@ import { FeeModel } from "../models/fees.model";
 import { NotificationOrchestratorService } from "../services/notificationOrchestrator.service";
 import { container } from "../core/di/container";
 import { istCalendarDay, istDateString, istHour, istMonthYear, istWeekdayShort } from "../utils/ist.util";
+import { NotificationModel } from "../models/notification.model";
+import { ParentNotificationModel } from "../models/parentNotification.model";
+import { logger } from "../lib/logger";
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -25,6 +28,19 @@ export function startRetentionJobs() {
     const today = istDateString();
     if (lastDailyIstDate === today) return;
     lastDailyIstDate = today;
+
+    // Prune old logs to prevent collection size bloat
+    try {
+      const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+      const resGeneral = await NotificationModel.deleteMany({ createdAt: { $lt: ninetyDaysAgo } });
+      const resParent = await ParentNotificationModel.deleteMany({ createdAt: { $lt: ninetyDaysAgo } });
+      logger.info(
+        `[Retention] Pruned notification logs older than 90 days. Deleted: ${resGeneral.deletedCount} general notifications, ${resParent.deletedCount} parent notifications.`
+      );
+    } catch (e) {
+      logger.error("[Retention] Cleanup task failed:", e);
+    }
+
     const centers = await CenterModel.find({ subscriptionStatus: "active", blocked: false }).lean().exec();
     for (const c of centers) {
       const hasStudents =

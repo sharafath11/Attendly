@@ -45,4 +45,5 @@ export type User = {
   centerId?: string;
   status?: "active" | "pending" | "disabled";
   phone?: string;
+  customId?: string;
 };

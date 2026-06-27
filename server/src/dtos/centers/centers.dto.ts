@@ -6,7 +6,9 @@ export interface CenterResponseDTO {
   email: string;
   phone?: string;
   address?: string;
-  medium?: "English" | "Malayalam";
+  medium?: string;
+  mediums?: string[];
+  sessions?: string[];
   status?: string;
   planType?: "basic" | "pro";
   teacherLimit?: number;

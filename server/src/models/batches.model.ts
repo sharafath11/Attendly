@@ -8,7 +8,7 @@ export interface IBatch {
   session: string;
   scheduleTime: string;
   days: string[];
-  teacherId?: mongoose.Types.ObjectId | null;
+  subjects: string[];
   centerId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   createdAt: Date;
@@ -25,15 +25,11 @@ const batchSchema: Schema<BatchDocument> = new Schema(
     session: { type: String, required: true, trim: true },
     scheduleTime: { type: String, required: true, trim: true },
     days: { type: [String], required: true, default: [] },
-    teacherId: { type: Schema.Types.ObjectId, ref: "User", index: true, default: null },
+    subjects: { type: [String], required: false, default: [] },
     centerId: { type: Schema.Types.ObjectId, required: true, ref: "Center", index: true },
     userId: { type: Schema.Types.ObjectId, required: true, ref: "User", index: true },
   },
   { timestamps: true }
 );
-
-batchSchema.index({ centerId: 1, teacherId: 1 });
-
-
 
 export const BatchModel: Model<BatchDocument> = mongoose.model<BatchDocument>("Batch", batchSchema);

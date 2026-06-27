@@ -5,12 +5,12 @@ import { MailTemplates } from "../const/mailTemplates";
 dotenv.config({ path: ".env.local" });
 dotenv.config();
 
-// MailBluster configuration
-const MAILBLUSTER_API_KEY = process.env.MAILBLUSTER_API_KEY || "40f059b2-af00-48fa-9936-ea173d2cc7ac";
+// MailBluster configuration — must be set via environment; no hardcoded fallback.
+const MAILBLUSTER_API_KEY = process.env.MAILBLUSTER_API_KEY;
 const SENDER_EMAIL = process.env.EMAIL_USER;
 
-if (!MAILBLUSTER_API_KEY) throw new Error("MAILBLUSTER_API_KEY is missing");
-if (!SENDER_EMAIL) throw new Error("EMAIL_USER is missing");
+if (!MAILBLUSTER_API_KEY) throw new Error("MAILBLUSTER_API_KEY env var is missing");
+if (!SENDER_EMAIL) throw new Error("EMAIL_USER env var is missing");
 
 /**
  * Generic function to send email via MailBluster API
@@ -25,7 +25,7 @@ async function sendMailBlusterEmail(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "api-key": MAILBLUSTER_API_KEY,
+      "api-key": MAILBLUSTER_API_KEY!,
     },
     body: JSON.stringify({
       from: SENDER_EMAIL,
@@ -49,13 +49,26 @@ async function sendMailBlusterEmail(
  * Send OTP email
  */
 export async function sendEmailOtp(email: string, otp: string) {
-  await sendMailBlusterEmail(
-    email,
-    MailTemplates.OTP.SUBJECT,
-    MailTemplates.OTP.HTML(otp),
-    MailTemplates.OTP.TEXT(otp)
-  );
-  console.log(`OTP email sent to ${email}`);
+  // Always log OTP in console for development/debugging
+  console.log(`\n\n=========================================`);
+  console.log(`[SECURITY] OTP generated for ${email}: ${otp}`);
+  console.log(`=========================================\n\n`);
+
+  try {
+    await sendTransactionalHtml(
+      email,
+      MailTemplates.OTP.SUBJECT,
+      MailTemplates.OTP.HTML(otp),
+      MailTemplates.OTP.TEXT(otp)
+    );
+    console.log(`OTP email sent to ${email}`);
+  } catch (err: any) {
+    console.error(`Failed to send OTP email to ${email}:`, err?.message);
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("MAIL_SEND_FAILED");
+    }
+    // In dev mode, we suppress the error so testing can proceed via the logged OTP
+  }
 }
 
 /**
@@ -87,7 +100,7 @@ export async function sendPasswordResetEmail(email: string, resetLink: string) {
 /**
  * Prefer SMTP (Nodemailer) when SMTP_HOST is set; otherwise MailBluster (same as other emails).
  */
-export async function sendTransactionalHtml(to: string, subject: string, html: string, text: string) {
+export async function sendTransactionalHtml(to: string, subject: string, html: string, text: string, fromName?: string) {
   if (process.env.SMTP_HOST && process.env.SMTP_USER) {
     const nodemailer = await import("nodemailer");
     const transporter = nodemailer.createTransport({
@@ -99,8 +112,9 @@ export async function sendTransactionalHtml(to: string, subject: string, html: s
         pass: process.env.SMTP_PASS ?? "",
       },
     });
+    const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER;
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      from: fromName ? `${fromName} <${fromEmail}>` : fromEmail,
       to,
       subject,
       text,

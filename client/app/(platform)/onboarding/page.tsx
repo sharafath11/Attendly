@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/button";
 import { Check, ChevronRight } from "lucide-react";
@@ -8,39 +8,58 @@ import { cn } from "@/lib/utils";
 
 const steps = [
   {
-    title: "Create your center",
-    body: "Add your center name and contact so messages and receipts look professional.",
-    href: "/register-center",
-    cta: "Create center",
+    title: "Connect WhatsApp",
+    body: "Link your WhatsApp so automated attendance and fee reminders can be sent instantly.",
+    href: "/messages",
+    cta: "Setup WhatsApp",
+  },
+  {
+    title: "Create a Teacher",
+    body: "Add your first teacher. They will automatically receive a welcome WhatsApp message with their login.",
+    href: "/teachers",
+    cta: "Add Teacher",
+  },
+  {
+    title: "Create a Batch",
+    body: "Group students who meet on the same days — like “Grade 10 Evening”.",
+    href: "/batches",
+    cta: "Create Batch",
   },
   {
     title: "Add your first students",
-    body: "Add at least 3 students so attendance and fees start to feel real.",
+    body: "Add students to the batch so you can start marking attendance.",
     href: "/students",
-    cta: "Add students",
+    cta: "Add Students",
   },
   {
-    title: "Create a batch",
-    body: "Group students who meet on the same days — like “Grade 10 evening”.",
-    href: "/batches",
-    cta: "Create batch",
-  },
-  {
-    title: "Mark your first attendance",
-    body: "Open today’s batch and tap present or absent — it takes seconds.",
-    href: "/attendance",
-    cta: "Mark attendance",
-  },
-  {
-    title: "Send your first reminder",
-    body: "Ping parents on WhatsApp for fees or updates — no chasing calls.",
-    href: "/messages",
-    cta: "Send reminder",
+    title: "Complete your profile",
+    body: "Add your center name and contact details to finalize your setup.",
+    href: "/settings",
+    cta: "Complete profile",
   },
 ];
 
 export default function OnboardingPage() {
   const [done, setDone] = useState<Record<number, boolean>>({});
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("onboarding_progress");
+    if (saved) {
+      try {
+        setDone(JSON.parse(saved));
+      } catch (e) {}
+    }
+    setMounted(true);
+  }, []);
+
+  const handleToggle = (index: number) => {
+    setDone((prev) => {
+      const next = { ...prev, [index]: !prev[index] };
+      localStorage.setItem("onboarding_progress", JSON.stringify(next));
+      return next;
+    });
+  };
 
   const completed = steps.filter((_, i) => done[i]).length;
   const pct = Math.round((completed / steps.length) * 100);
@@ -97,7 +116,7 @@ export default function OnboardingPage() {
                     {step.cta}
                     <ChevronRight className="ml-1 h-4 w-4" />
                   </Link>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setDone((d) => ({ ...d, [index]: !d[index] }))}>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => handleToggle(index)}>
                     {done[index] ? "Undo" : "Mark done"}
                   </Button>
                 </div>

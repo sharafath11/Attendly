@@ -1,18 +1,43 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { studentsService } from "@/services/students.service";
-import { ApiResponse, CreateStudentPayload, Student, StudentsListResponse, StudentsQuery, UpdateStudentPayload } from "@/types/students/studentTypes";
+import { ApiResponse, CreateStudentPayload, Student, StudentsListResponse, PaginatedStudentsResponse, StudentsQuery, UpdateStudentPayload } from "@/types/students/studentTypes";
 
 export const useStudents = (params?: StudentsQuery) => {
   const search = params?.search ?? "";
   const batchId = params?.batchId ?? "";
   const session = params?.session ?? "";
-  const page = params?.page ?? 1;
+  const cursor = params?.cursor ?? "";
+  const sortBy = params?.sortBy ?? "createdAt";
+  const sortOrder = params?.sortOrder ?? "desc";
   const limit = params?.limit ?? 10;
 
-  return useQuery<ApiResponse<StudentsListResponse> | null>({
-    queryKey: ["students", search, batchId, session, page, limit],
+  return useQuery<ApiResponse<PaginatedStudentsResponse> | null>({
+    queryKey: ["students", search, batchId, session, cursor, sortBy, sortOrder, limit],
     queryFn: () => studentsService.getStudents(params),
     placeholderData: keepPreviousData,
+  });
+};
+
+export const useInfiniteStudents = (params?: StudentsQuery) => {
+  const search = params?.search ?? "";
+  const batchId = params?.batchId ?? "";
+  const session = params?.session ?? "";
+  const sortBy = params?.sortBy ?? "createdAt";
+  const sortOrder = params?.sortOrder ?? "desc";
+  const limit = params?.limit ?? 10;
+
+  return useInfiniteQuery<ApiResponse<PaginatedStudentsResponse> | null>({
+    queryKey: ["students", "infinite", search, batchId, session, sortBy, sortOrder, limit],
+    queryFn: ({ pageParam }) =>
+      studentsService.getStudents({
+        ...params,
+        cursor: pageParam as string | undefined,
+        limit,
+      }),
+    initialPageParam: undefined,
+    getNextPageParam: (lastPage) => {
+      return lastPage?.data?.hasNextPage ? lastPage?.data?.nextCursor || undefined : undefined;
+    },
   });
 };
 

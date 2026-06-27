@@ -15,6 +15,7 @@ export interface IUser extends Document {
   centerId?: Types.ObjectId | string;
   position?: string;
   status?: "active" | "pending" | "disabled";
+  customId?: string;
   parentDisplayName?: string;
   parentContactEmail?: string;
   createdAt?: Date;

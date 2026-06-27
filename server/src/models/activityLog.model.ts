@@ -8,7 +8,10 @@ export type ActivityAction =
   | "fee_status_updated"
   | "attendance_saved"
   | "batch_created"
-  | "teacher_created";
+  | "teacher_created"
+  | "teacher_invited"
+  | "teacher_onboarded"
+  | "report_generated";
 
 export interface IActivityLog {
   _id: mongoose.Types.ObjectId;

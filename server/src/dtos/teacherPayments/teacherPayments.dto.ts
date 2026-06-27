@@ -1,14 +1,14 @@
 export interface CreateTeacherPaymentDTO {
   teacherId: string;
   amount: number;
-  month: string;
+  month: number;
   year: number;
   notes?: string;
 }
 
 export interface TeacherPaymentFiltersDTO {
   teacherId?: string;
-  month?: string;
+  month?: number;
   year?: number;
 }
 
@@ -17,7 +17,7 @@ export interface TeacherPaymentRecordDTO {
   teacherId: string;
   centerId: string;
   amount: number;
-  month: string;
+  month: number;
   year: number;
   notes?: string;
   paidDate?: Date;

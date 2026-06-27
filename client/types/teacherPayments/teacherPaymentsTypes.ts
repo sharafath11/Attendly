@@ -3,7 +3,7 @@ export type TeacherPayment = {
   teacherId: string;
   centerId: string;
   amount: number;
-  month: string;
+  month: number;
   year: number;
   notes?: string;
   paidDate?: string;
@@ -20,14 +20,14 @@ export type TeacherPayment = {
 export type CreateTeacherPaymentPayload = {
   teacherId: string;
   amount: number;
-  month: string;
+  month: number;
   year: number;
   notes?: string;
 };
 
 export type TeacherPaymentFilters = {
   teacherId?: string;
-  month?: string;
+  month?: number;
   year?: number;
 };
 

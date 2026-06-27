@@ -54,6 +54,18 @@ export default function StudentProfilePage() {
         <h2 className="text-lg font-semibold text-foreground">Student Details</h2>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <div>
+            <p className="text-xs text-muted-foreground">Student ID</p>
+            <p className="text-sm font-semibold text-foreground">
+              {student?.customId ? (
+                <span className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground ring-1 ring-inset ring-border">
+                  {student.customId}
+                </span>
+              ) : (
+                "—"
+              )}
+            </p>
+          </div>
+          <div>
             <p className="text-xs text-muted-foreground">Name</p>
             <p className="text-sm font-medium text-foreground">{student?.name ?? "—"}</p>
           </div>

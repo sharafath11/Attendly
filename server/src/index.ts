@@ -1,17 +1,17 @@
 import "reflect-metadata";
 import express from "express";
+import { createServer } from "http";
+import { SocketService } from "./services/socket.service";
 import "./core/di/container"; 
 import authRoutes from "./routes/auth.Routes";
-import studentRoutes from "./routes/students.Routes";
-import batchRoutes from "./routes/batches.Routes";
+import { userRoutes, userBatchRoutes } from "./modules/user/user.routes";
 import attendanceRoutes from "./routes/attendance.Routes";
 import feesRoutes from "./routes/fees.Routes";
-import teacherRoutes from "./routes/teacher.Routes";
-import teacherPaymentsRoutes from "./routes/teacherPayments.Routes";
-import teacherAttendanceRoutes from "./routes/teacherAttendance.Routes";
+import teacherRoutes, { teacherAttendanceRoutes, teacherPaymentsRoutes } from "./modules/teacher/teacher.routes";
 import adminRoutes from "./routes/admin.Routes";
 import adminAuthRoutes from "./routes/adminAuth.Routes";
 import centersRoutes from "./routes/centers.Routes";
+import centerRoutes from "./routes/center.Routes";
 import dashboardRoutes from "./routes/dashboard.Routes";
 import { connectDB } from "./config/database";
 import dotenv from "dotenv";
@@ -21,11 +21,16 @@ import { attachCenterContext } from "./shared/middleware/centerContext.middlewar
 import { startSubscriptionExpiryJob } from "./jobs/subscriptionExpiry.job";
 import { startAutomationJobs } from "./jobs/automation.jobs";
 import { startRetentionJobs } from "./jobs/retention.jobs";
-import parentRoutes from "./routes/parent.Routes";
+import parentRoutes from "./modules/parent/parent.routes";
 import notificationsRoutes from "./routes/notifications.Routes";
 import automationSettingsRoutes from "./routes/automationSettings.Routes";
 import activityLogRoutes from "./routes/activityLog.Routes";
 import paymentRoutes from "./routes/payment.Routes";
+import whatsappRoutes from "./routes/whatsapp.Routes";
+import reportsRoutes from "./routes/reports.Routes";
+import examRoutes from "./modules/exam/exam.routes";
+import { initWhatsApp, destroyAllWAClients } from "./services/whatsappAuth.service";
+import { startWhatsAppWorker, stopWhatsAppWorker } from "./services/whatsapp.worker";
 import "./models/parentLink.model";
 
 dotenv.config({ path: ".env.local" });
@@ -73,23 +78,52 @@ connectDB();
 startSubscriptionExpiryJob();
 startAutomationJobs();
 startRetentionJobs();
+
+// ── WhatsApp / BullMQ ─────────────────────────────────────────────────────
+const hasRedis = Boolean(process.env.REDIS_URL || process.env.REDIS_HOST);
+if (hasRedis) {
+  startWhatsAppWorker();
+  import("./models/center.model").then(({ CenterModel }) => {
+    CenterModel.find({ whatsappStatus: "Connected" }).lean().then(centers => {
+      centers.forEach(c => {
+        initWhatsApp(c._id.toString()).catch((e) =>
+          console.error(`[WhatsApp] Startup connection failed for center ${c._id}:`, e)
+        );
+      });
+    }).catch(e => console.error("[WhatsApp] Failed to fetch centers for startup:", e));
+  });
+} else {
+  console.warn(
+    "[WhatsApp] REDIS_HOST/REDIS_URL not set — BullMQ worker and WhatsApp not started."
+  );
+}
 app.use("/api/auth", authRoutes);
-app.use("/api/students", studentRoutes);
-app.use("/api/batches", batchRoutes);
+app.use("/api/students", userRoutes);
+app.use("/api/batches", userBatchRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/fees", feesRoutes);
+
+// New unified /api/users, /api/teachers, /api/parents
+app.use("/api/users", userRoutes);
+app.use("/api/users/batches", userBatchRoutes);
 app.use("/api/teachers", teacherRoutes);
-app.use("/api/teacher-payments", teacherPaymentsRoutes);
 app.use("/api/teacher-attendance", teacherAttendanceRoutes);
+app.use("/api/teacher-payments", teacherPaymentsRoutes);
+app.use("/api/parents", parentRoutes);
+
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/centers", centersRoutes);
+app.use("/api/center", centerRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/parent", parentRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/automation", automationSettingsRoutes);
 app.use("/api/activity-logs", activityLogRoutes);
+app.use("/api/whatsapp", whatsappRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/reports", reportsRoutes);
+app.use("/api", examRoutes);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("[error] Unhandled error:", err);
@@ -105,4 +139,44 @@ process.on("uncaughtException", (err) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+const httpServer = createServer(app);
+SocketService.init(httpServer);
+httpServer.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+
+// ── (A) Resilient Process Trap Hook ─────────────────────────────────────────
+// Traps SIGTERM / SIGINT to cleanly destroy all Puppeteer browser instances
+// before the process exits. Prevents orphaned chrome processes and corrupt
+// LocalAuth session files from partial writes on abrupt termination.
+
+async function gracefulShutdown(signal: string): Promise<void> {
+  console.log(`\n[Process] Received ${signal} — starting graceful shutdown...`);
+
+  // 1. Stop accepting new BullMQ jobs
+  try {
+    await stopWhatsAppWorker();
+  } catch (e) {
+    console.warn("[Process] Error stopping WhatsApp worker:", e);
+  }
+
+  // 2. Destroy all WhatsApp Puppeteer clients cleanly
+  try {
+    await destroyAllWAClients();
+  } catch (e) {
+    console.warn("[Process] Error destroying WhatsApp clients:", e);
+  }
+
+  // 3. Close HTTP server (stop accepting new requests)
+  httpServer.close(() => {
+    console.log("[Process] HTTP server closed.");
+    process.exit(0);
+  });
+
+  // Force exit after 10s if shutdown hangs
+  setTimeout(() => {
+    console.error("[Process] Forced exit after 10s shutdown timeout.");
+    process.exit(1);
+  }, 10_000).unref();
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));

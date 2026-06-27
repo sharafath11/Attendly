@@ -16,4 +16,13 @@ export interface IStudentsRepository {
   update(id: string, data: Partial<IStudent>): Promise<IStudent | null>;
   softDelete(id: string): Promise<boolean>;
   count(filter: FilterQuery<StudentDocument>): Promise<number>;
+  findManyCursor(
+    filter: FilterQuery<StudentDocument>,
+    options: {
+      limit: number;
+      cursor?: string;
+      sortBy?: string;
+      sortOrder?: "asc" | "desc";
+    }
+  ): Promise<IStudent[]>;
 }

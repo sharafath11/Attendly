@@ -32,21 +32,24 @@ export interface LowAttendanceStudentDTO {
 
 export interface AttendanceRecordDTO {
   studentId: string;
-  status: "present" | "absent" | "leave";
+  status: "present" | "absent" | "leave" | "half_day";
+  subject?: string;
 }
 
 export interface AttendanceByDateDTO {
   batchId: string;
   date: string;
+  subject?: string;
   records: AttendanceRecordDTO[];
 }
 
 export interface CreateAttendanceDTO {
   batchId?: string;
   date: string | Date;
+  subject?: string;
   records?: AttendanceRecordDTO[];
   studentId?: string;
-  status?: "present" | "absent" | "leave";
+  status?: "present" | "absent" | "leave" | "half_day";
 }
 
 export interface AttendanceHistoryFiltersDTO {
@@ -61,7 +64,8 @@ export interface AttendanceHistoryRecordDTO {
   studentId: string;
   batchId: string;
   date: string;
-  status: "present" | "absent" | "leave";
+  subject?: string;
+  status: "present" | "absent" | "leave" | "half_day";
   markedBy?: string;
   createdAt?: Date;
   updatedAt?: Date;

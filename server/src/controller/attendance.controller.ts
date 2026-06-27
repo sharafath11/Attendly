@@ -105,12 +105,14 @@ export class AttendanceController implements IAttendanceController {
 
       const batchId = getStringParam(req.query.batchId);
       const date = getStringParam(req.query.date);
+      const subject = getStringParam(req.query.subject) || undefined;
       validateAttendanceQuery(batchId, date);
 
       const result = await this._attendanceService.getAttendanceByBatchAndDate(
         scopeId,
         batchId as string,
-        date as string
+        date as string,
+        subject
       );
       sendResponse(res, StatusCode.OK, MESSAGES.COMMON.SUCCESS, true, result);
     } catch (error) {
@@ -152,6 +154,7 @@ export class AttendanceController implements IAttendanceController {
       const filters = validateAttendanceHistoryFilters({
         studentId: getStringParam(req.query.studentId),
         batchId: getStringParam(req.query.batchId),
+        subject: getStringParam(req.query.subject),
         dateFrom: getStringParam(req.query.dateFrom),
         dateTo: getStringParam(req.query.dateTo),
       });

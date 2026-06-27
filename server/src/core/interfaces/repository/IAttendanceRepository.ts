@@ -17,14 +17,16 @@ export interface IAttendanceRepository {
   getAttendanceByBatchAndDate(
     centerId: string,
     batchId: string,
-    date: Date
+    date: Date,
+    subject?: string
   ): Promise<AttendanceRecordDTO[]>;
   upsertAttendanceByBatchAndDate(
     centerId: string,
     batchId: string,
     date: Date,
     records: AttendanceRecordDTO[],
-    markedBy: string
+    markedBy: string,
+    subject?: string
   ): Promise<void>;
   upsertAttendanceRecord(
     centerId: string,
@@ -32,13 +34,15 @@ export interface IAttendanceRepository {
     date: Date,
     status: AttendanceRecordDTO["status"],
     markedBy: string,
-    batchId?: string
+    batchId?: string,
+    subject?: string
   ): Promise<void>;
   getAttendanceHistory(
     centerId: string,
     filters: {
       studentId?: string;
       batchId?: string;
+      subject?: string;
       dateFrom?: Date;
       dateTo?: Date;
     }
@@ -48,7 +52,8 @@ export interface IAttendanceRepository {
       studentId: string;
       batchId: string;
       date: string;
-      status: "present" | "absent" | "leave";
+      subject?: string;
+      status: "present" | "absent" | "leave" | "half_day";
       markedBy?: string;
       createdAt?: Date;
       updatedAt?: Date;

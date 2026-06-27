@@ -47,6 +47,11 @@ export class AutomationController {
       if (typeof body.autoFeeGeneration === "boolean") update.autoFeeGeneration = body.autoFeeGeneration;
       if (typeof body.feeReminderEnabled === "boolean") update.feeReminderEnabled = body.feeReminderEnabled;
       if (typeof body.reminderDaysBefore === "number") update.reminderDaysBefore = body.reminderDaysBefore;
+      if (Array.isArray(body.feeReminderDays)) {
+        update.feeReminderDays = body.feeReminderDays
+          .map((n: any) => Number(n))
+          .filter((n: number) => !isNaN(n) && n >= 1 && n <= 31);
+      }
       if (typeof body.attendanceAutoDefaultAbsent === "boolean")
         update.attendanceAutoDefaultAbsent = body.attendanceAutoDefaultAbsent;
 

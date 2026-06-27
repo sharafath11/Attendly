@@ -182,7 +182,7 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
     try {
       const centerObjectId = new mongoose.Types.ObjectId(centerId);
       const match: Record<string, unknown> = {
-        $or: [{ centerId: centerObjectId }, { userId: centerId }],
+        $or: [{ centerId: centerObjectId }, { userId: centerObjectId }],
         month: filters.month,
         year: filters.year,
       };
@@ -384,8 +384,9 @@ export class FeesRepository extends BaseRepository<FeeDocument, IFee> implements
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
 
+      const centerObjectId = new mongoose.Types.ObjectId(centerId);
       const match: Record<string, unknown> = {
-        $or: [{ centerId: new mongoose.Types.ObjectId(centerId) }, { userId: centerId }],
+        $or: [{ centerId: centerObjectId }, { userId: centerObjectId }],
       };
       if (month && year) {
         match.month = month;

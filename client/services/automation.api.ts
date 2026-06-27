@@ -4,6 +4,7 @@ export type AutomationSettings = {
   autoFeeGeneration: boolean;
   feeReminderEnabled: boolean;
   reminderDaysBefore: number;
+  feeReminderDays: number[];
   attendanceAutoDefaultAbsent: boolean;
 };
 

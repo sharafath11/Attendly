@@ -5,7 +5,7 @@ export interface ITeacherPayment {
   teacherId: mongoose.Types.ObjectId;
   centerId: mongoose.Types.ObjectId;
   amount: number;
-  month: string;
+  month: number;
   year: number;
   notes?: string;
   paidDate?: Date;
@@ -20,7 +20,7 @@ const teacherPaymentSchema: Schema<TeacherPaymentDocument> = new Schema(
     teacherId: { type: Schema.Types.ObjectId, required: true, ref: "User", index: true },
     centerId: { type: Schema.Types.ObjectId, required: true, ref: "Center", index: true },
     amount: { type: Number, required: true },
-    month: { type: String, required: true, trim: true },
+    month: { type: Number, required: true, min: 1, max: 12 },
     year: { type: Number, required: true },
     notes: { type: String, trim: true },
     paidDate: { type: Date },

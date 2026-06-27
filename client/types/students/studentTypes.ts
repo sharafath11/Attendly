@@ -7,6 +7,7 @@ export type Student = {
   monthlyFee: number;
   joinDate: string;
   userId: string;
+  customId?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -17,6 +18,9 @@ export type StudentsQuery = {
   session?: string;
   page?: number;
   limit?: number;
+  cursor?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 };
 
 export type CreateStudentPayload = {
@@ -35,6 +39,13 @@ export type StudentsListResponse = {
   total: number;
   page: number;
   pages: number;
+};
+
+export type PaginatedStudentsResponse = {
+  success: boolean;
+  data: Student[];
+  nextCursor: string | null;
+  hasNextPage: boolean;
 };
 
 export type ApiResponse<T> = {

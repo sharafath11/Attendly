@@ -14,42 +14,67 @@ export function middleware(request: NextRequest) {
   const isAuthenticated = Boolean(token || refreshToken)
   const isAdminAuthenticated = Boolean(adminToken || adminRefreshToken)
 
-  const isAuthPage =
-    pathname === "/login" || pathname === "/register"
-
+  const isAuthPage = pathname === "/login" || pathname === "/register" || pathname.startsWith("/forgot-password")
   const isPublicPage = pathname === "/"
-
-  const isDashboard = pathname.startsWith("/dashboard")
-  const isAdmin = pathname.startsWith("/admin")
+  
+  const isAdminPage = pathname.startsWith("/admin")
   const isAdminLogin = pathname === "/admin/login"
-  const isParent = pathname.startsWith("/parent")
+  
+  const isParentPage = pathname.startsWith("/parent")
+  const isParentLogin = pathname === "/parent/login"
 
   if (AUTH_DEBUG) {
     console.log("[AuthDebug] middleware", {
       path: pathname,
-      hasToken: Boolean(token),
-      hasRefreshToken: Boolean(refreshToken),
-      hasAdminToken: Boolean(adminToken),
-      hasAdminRefreshToken: Boolean(adminRefreshToken),
+      isAuthenticated,
+      isAdminAuthenticated,
     })
   }
 
-  if (isAuthenticated || isAdminAuthenticated) {
-    if ((isAuthPage || isPublicPage) && !isParent) {
-      return NextResponse.redirect(
-        new URL("/dashboard", request.url)
-      )
-    }
+  // 1. Redirection for Admin Pages
+  if (isAdminPage) {
     if (isAdminLogin) {
-      return NextResponse.redirect(new URL("/admin/dashboard", request.url))
+      if (isAdminAuthenticated) {
+        return NextResponse.redirect(new URL("/admin/centers", request.url))
+      }
+      return NextResponse.next()
+    }
+
+    if (!isAdminAuthenticated) {
+      return NextResponse.redirect(new URL("/admin/login", request.url))
     }
     return NextResponse.next()
   }
 
-  if (!isAuthenticated && (isDashboard || isAdmin) && !isAdminLogin) {
-    return NextResponse.redirect(
-      new URL("/login", request.url)
-    )
+  // 2. Redirection for Parent Pages
+  if (isParentPage) {
+    if (isParentLogin) {
+      if (isAuthenticated) {
+        return NextResponse.redirect(new URL("/parent", request.url))
+      }
+      return NextResponse.next()
+    }
+
+    if (!isAuthenticated) {
+      return NextResponse.redirect(new URL("/parent/login", request.url))
+    }
+    return NextResponse.next()
+  }
+
+  // 3. Redirection for Guest Pages (login/register/home) for normal users
+  if (isAuthPage || isPublicPage) {
+    if (isAuthenticated) {
+      return NextResponse.redirect(new URL("/dashboard", request.url))
+    }
+    if (isAdminAuthenticated) {
+      return NextResponse.redirect(new URL("/admin/centers", request.url))
+    }
+    return NextResponse.next()
+  }
+
+  // 4. Redirection for all other Platform Pages (e.g. /settings, /students, /teachers, /batches, etc.)
+  if (!isAuthenticated) {
+    return NextResponse.redirect(new URL("/login", request.url))
   }
 
   return NextResponse.next()
@@ -57,12 +82,14 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
-    "/login",
-    "/register",
-    "/dashboard/:path*",
-    "/admin/:path*",
-    "/blocked",
-    "/parent/:path*",
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - images (public images)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico|images).*)",
   ],
 }

@@ -9,4 +9,8 @@ export interface IAuthController {
     getCurrentUser(req: Request, res: Response): Promise<void>
     logout(req: Request, res: Response): Promise<void>
     refeshToken(req: Request, res: Response): Promise<void>
+    changePassword(req: Request, res: Response): Promise<void>
+    updateProfile(req: Request, res: Response): Promise<void>
+    forgotPassword(req: Request, res: Response): Promise<void>
+    resetPassword(req: Request, res: Response): Promise<void>
 }

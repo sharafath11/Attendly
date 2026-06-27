@@ -2,11 +2,16 @@ import { Response } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { TokenPayload } from "../types/authTypes";
+import { logger } from "./logger";
 
 dotenv.config({ path: ".env.local" });
 dotenv.config();
-const SECRET_KEY = process.env.JWT_SECRET || "yourAccessSecret";
-const REFRESH_KEY = process.env.REFRESH_SECRET || "yourRefreshSecret";
+const SECRET_KEY = process.env.JWT_SECRET || process.env.ACCESS_TOKEN_SECRET;
+const REFRESH_KEY = process.env.REFRESH_SECRET || process.env.REFRESH_TOKEN_SECRET;
+
+if (!SECRET_KEY || !REFRESH_KEY) {
+  throw new Error("CRITICAL CONFIGURATION ERROR: JWT_SECRET (or ACCESS_TOKEN_SECRET) and REFRESH_SECRET (or REFRESH_TOKEN_SECRET) must be defined in the environment variables.");
+}
 const ACCESS_EXPIRES_IN = "15m";
 const REFRESH_EXPIRES_IN = "7d";
 
@@ -41,7 +46,7 @@ const logCookieSet = (res: Response, label: string) => {
   if (!AUTH_DEBUG) return;
   const setCookie = res.getHeader("set-cookie");
   const count = Array.isArray(setCookie) ? setCookie.length : setCookie ? 1 : 0;
-  console.log(`[AuthDebug] ${label}: set-cookie count=${count}`, {
+  logger.info(`[AuthDebug] ${label}: set-cookie count=${count}`, {
     secure: cookieOptions.secure,
     sameSite: cookieOptions.sameSite,
     domain: "domain" in cookieOptions ? cookieOptions.domain : undefined,
