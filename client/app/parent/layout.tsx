@@ -3,7 +3,9 @@
 import type { ReactNode } from "react";
 import { ParentProvider, useParentContext } from "@/context/ParentContext";
 import ParentBottomNav from "@/components/product/ParentBottomNav";
-import { Users, GraduationCap } from "lucide-react";
+import { Users, GraduationCap, LogOut } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { parentApi } from "@/services/parent.api";
 
 function ParentHeader() {
   const { childrenList, selectedChildId, setSelectedChildId, isLoading } = useParentContext();
@@ -43,12 +45,33 @@ function ParentHeader() {
             </div>
           </div>
         )}
+        <button
+          onClick={async () => {
+            await parentApi.logout();
+            window.location.href = "/parent/login";
+          }}
+          className="p-2 text-muted-foreground hover:bg-muted rounded-full transition-colors ml-2"
+          title="Logout"
+        >
+          <LogOut className="w-5 h-5" />
+        </button>
       </div>
     </header>
   );
 }
 
 export default function ParentLayout({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const isLogin = pathname?.includes("/parent/login");
+
+  if (isLogin) {
+    return (
+      <div className="min-h-screen bg-background font-sans">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <ParentProvider>
       <div className="min-h-screen bg-background pb-24 font-sans">

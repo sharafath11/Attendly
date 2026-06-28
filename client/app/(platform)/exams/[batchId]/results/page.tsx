@@ -71,7 +71,7 @@ export default function ExamResultsPage() {
             if (selectedExamId) setSelectedExamId(null);
             else router.back();
           }}
-          className="rounded-full p-2 hover:bg-secondary"
+          className="btn-tactile rounded-full p-2 hover:bg-secondary"
         >
           <ArrowLeft className="h-5 w-5 text-muted-foreground" />
         </button>
@@ -93,7 +93,7 @@ export default function ExamResultsPage() {
               <select
                 value={subjectFilter}
                 onChange={(e) => setSubjectFilter(e.target.value)}
-                className="w-48 rounded-lg border border-border bg-card py-2 pl-9 pr-3 text-sm text-foreground"
+                className="input-interactive w-48 rounded-lg border border-border bg-card py-2 pl-9 pr-3 text-sm text-foreground"
               >
                 <option value="All Subjects">All Subjects</option>
                 {uniqueSubjects.map((sub) => (
@@ -115,7 +115,7 @@ export default function ExamResultsPage() {
                 <div
                   key={exam._id}
                   onClick={() => setSelectedExamId(exam._id)}
-                  className="cursor-pointer rounded-xl border border-border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  className="interactive-card cursor-pointer rounded-xl border border-border bg-card p-5 shadow-sm"
                 >
                   <div className="mb-2 flex items-start justify-between">
                     <div>
@@ -137,7 +137,7 @@ export default function ExamResultsPage() {
         </>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-card p-5">
+          <div className="interactive-card rounded-xl border border-border bg-card p-5">
             <h2 className="text-lg font-semibold">{selectedExam?.examName}</h2>
             <p className="text-sm text-muted-foreground">
               {selectedExam?.subject} • Total Marks: {selectedExam?.totalMarks} • Date: {new Date(selectedExam?.date || "").toLocaleDateString()}
@@ -153,7 +153,7 @@ export default function ExamResultsPage() {
                 placeholder="Search student name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-border bg-card py-2 pl-9 pr-4 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="input-interactive w-full rounded-lg border border-border bg-card py-2 pl-9 pr-4 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </div>
             <div className="relative">
@@ -161,7 +161,7 @@ export default function ExamResultsPage() {
               <select
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value as "desc" | "asc")}
-                className="w-48 rounded-lg border border-border bg-card py-2 pl-9 pr-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="input-interactive w-48 rounded-lg border border-border bg-card py-2 pl-9 pr-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <option value="desc">Sort by Marks (Highest First)</option>
                 <option value="asc">Sort by Marks (Lowest First)</option>
@@ -175,7 +175,7 @@ export default function ExamResultsPage() {
             ) : processedMarks.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">No marks have been recorded for this exam yet.</div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="scroll-guard">
                 <table className="w-full text-left text-sm">
                   <thead className="border-b border-border bg-muted/50">
                     <tr>
@@ -187,7 +187,7 @@ export default function ExamResultsPage() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {processedMarks.map((mark) => (
-                      <tr key={mark._id} className="hover:bg-muted/20">
+                      <tr key={mark._id} className="table-row-interactive">
                         <td className="px-6 py-4 font-medium text-foreground">
                           {mark.studentId?.name}
                         </td>

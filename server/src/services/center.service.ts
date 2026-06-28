@@ -143,6 +143,9 @@ export class CenterService implements ICenterService {
 
   async getMyCenter(centerId: string): Promise<{
     name?: string | null;
+    address?: string | null;
+    mediums?: string[];
+    sessions?: string[];
     subscriptionStatus: string;
     subscriptionStartDate?: Date | null;
     subscriptionEndDate?: Date | null;
@@ -156,6 +159,9 @@ export class CenterService implements ICenterService {
     }
     return {
       name: center.name,
+      address: center.address ?? null,
+      mediums: center.mediums ?? [],
+      sessions: center.sessions ?? [],
       subscriptionStatus: center.subscriptionStatus,
       subscriptionStartDate: center.subscriptionStartDate ?? null,
       subscriptionEndDate: center.subscriptionEndDate ?? null,
@@ -166,10 +172,13 @@ export class CenterService implements ICenterService {
   }
 
   async searchCenters(query: string): Promise<Array<{ id: string; name: string; city: string }>> {
-    const filter = { status: "active", blocked: false };
+    const filter = { status: { $ne: "rejected" }, blocked: false };
     const q = query.trim();
     if (q) {
-      (filter as any).name = { $regex: q, $options: "i" };
+      (filter as any).$or = [
+        { name: { $regex: q, $options: "i" } },
+        { address: { $regex: q, $options: "i" } }
+      ];
     }
     const centers = await this._centerRepository.findMany(filter);
     return centers.slice(0, 10).map((c: any) => ({

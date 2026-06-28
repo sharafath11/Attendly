@@ -1,6 +1,7 @@
 "use client";
 
 import Modal from "@/components/dashboard/Modal";
+import { cn } from "@/lib/utils";
 
 type ConfirmTone = "default" | "warning" | "danger";
 
@@ -17,9 +18,9 @@ type ConfirmModalProps = {
 };
 
 const toneClasses: Record<ConfirmTone, string> = {
-  default: "border-border text-foreground hover:bg-secondary",
-  warning: "border-amber-500/30 text-amber-600 hover:bg-amber-500/10",
-  danger: "border-destructive/30 text-destructive hover:bg-destructive/10",
+  default: "border-border text-foreground hover:bg-[var(--btn-secondary-hover)] hover:border-[var(--card-hover-border)]",
+  warning: "border-amber-500/30 text-amber-600 hover:bg-amber-500/10 hover:border-amber-500/50",
+  danger: "border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50",
 };
 
 export default function ConfirmModal({
@@ -39,14 +40,17 @@ export default function ConfirmModal({
       <div className="flex flex-wrap justify-end gap-2 pt-2">
         <button
           onClick={onClose}
-          className="cursor-pointer rounded-md border border-border px-3 py-2 text-xs transition hover:bg-secondary"
+          className="btn-tactile cursor-pointer rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-[var(--btn-secondary-hover)] hover:text-foreground"
           disabled={isLoading}
         >
           {cancelLabel}
         </button>
         <button
           onClick={onConfirm}
-          className={`cursor-pointer rounded-md border px-3 py-2 text-xs transition ${toneClasses[tone]}`}
+          className={cn(
+            "btn-tactile cursor-pointer rounded-lg border px-4 py-2 text-xs font-medium",
+            toneClasses[tone],
+          )}
           disabled={isLoading}
         >
           {isLoading ? "Working..." : confirmLabel}

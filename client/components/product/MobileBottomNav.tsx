@@ -45,7 +45,7 @@ export default function MobileBottomNav({ role }: { role: Role }) {
               key={href}
               href={href}
               className={cn(
-                "flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[10px] font-medium transition-colors sm:text-xs",
+                "btn-tactile flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl py-2 text-[10px] font-medium sm:text-xs",
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground",
               )}
             >

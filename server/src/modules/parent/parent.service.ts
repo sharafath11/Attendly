@@ -108,7 +108,6 @@ export class ParentService {
     return {
       needsCenterPick: false as const,
       centerId,
-      devOtp: process.env.NODE_ENV !== "production" ? otp : undefined,
     };
   }
 

@@ -204,7 +204,7 @@ export default function RegisterCenterPage() {
                   />
                 </div>
                 {passwordError && <p className="text-xs text-destructive">{passwordError}</p>}
-                <Input label="Address" name="address" value={formData.address} onChange={handleChange} />
+                <Input label="City / Area" name="address" value={formData.address} onChange={handleChange} placeholder="e.g. Kozhikode, Kerala" />
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1">

@@ -41,3 +41,5 @@ turbo/
 # WhatsApp Auth Data
 server/whatsapp-auth/
 whatsapp-auth/
+.wwebjs_cache/
+server/.wwebjs_cache/

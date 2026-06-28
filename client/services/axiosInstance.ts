@@ -99,7 +99,7 @@ axiosInstance.interceptors.response.use(
         await axiosInstance.post("/parent/auth/refresh-token");
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        if (typeof window !== "undefined") {
+        if (typeof window !== "undefined" && window.location.pathname !== "/parent/login") {
           window.location.href = "/parent/login";
         }
         return Promise.reject(refreshError);
@@ -137,7 +137,7 @@ axiosInstance.interceptors.response.use(
         console.error("[Axios Interceptor] Refresh failed - redirecting to login");
         processQueue(refreshError);
         
-        if (typeof window !== "undefined") {
+        if (typeof window !== "undefined" && window.location.pathname !== "/login") {
           window.location.href = "/login";
         }
         
@@ -178,7 +178,7 @@ axiosInstance.interceptors.response.use(
         console.error("[Axios Interceptor] Admin refresh failed - redirecting to admin login");
         processAdminQueue(refreshError);
 
-        if (typeof window !== "undefined") {
+        if (typeof window !== "undefined" && window.location.pathname !== "/admin/login") {
           window.location.href = "/admin/login";
         }
 

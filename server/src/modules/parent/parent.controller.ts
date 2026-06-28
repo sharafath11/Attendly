@@ -27,7 +27,6 @@ export class ParentController {
       }
       sendResponse(res, StatusCode.OK, "OTP sent", true, {
         centerId: result.centerId,
-        devOtp: result.devOtp,
       });
     } catch (error) {
       handleControllerError(res, error);

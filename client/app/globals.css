@@ -37,6 +37,16 @@
   --sidebar-accent-foreground: #111827;
   --sidebar-border: #E5E7EB;
   --sidebar-ring: #6366F1;
+
+  /* Interaction tokens – Light */
+  --hover-lift: -2px;
+  --active-scale: 0.97;
+  --card-hover-border: #6366F1;
+  --btn-primary-hover: #4f46e5;
+  --btn-secondary-hover: #E5E7EB;
+  --row-hover-bg: rgba(243, 244, 246, 0.7);
+  --glow-primary: rgba(99, 102, 241, 0.15);
+  --glow-accent: rgba(16, 163, 127, 0.12);
 }
 
 .dark {
@@ -72,6 +82,16 @@
   --sidebar-accent-foreground: #E5E7EB;
   --sidebar-border: #1F2937;
   --sidebar-ring: #6366F1;
+
+  /* Interaction tokens – Dark */
+  --hover-lift: -2px;
+  --active-scale: 0.97;
+  --card-hover-border: #818cf8;
+  --btn-primary-hover: #818cf8;
+  --btn-secondary-hover: #1F2937;
+  --row-hover-bg: rgba(31, 41, 55, 0.5);
+  --glow-primary: rgba(99, 102, 241, 0.2);
+  --glow-accent: rgba(16, 185, 129, 0.15);
 }
 
 @theme inline {
@@ -122,6 +142,8 @@
   body {
     @apply bg-background text-foreground;
     font-synthesis-weight: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -131,4 +153,97 @@
       radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.15), transparent 45%),
       radial-gradient(circle at 80% 0%, rgba(34, 197, 94, 0.12), transparent 45%);
   }
+}
+
+/* ─── Premium Interaction Primitives ─── */
+
+/* Hardware-accelerated interactive card */
+.interactive-card {
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 200ms ease,
+              box-shadow 200ms ease;
+  will-change: transform;
+}
+.interactive-card:hover {
+  transform: translateY(var(--hover-lift));
+  border-color: var(--card-hover-border);
+  box-shadow: 0 4px 20px var(--glow-primary);
+}
+
+/* Tactile button press – hardware accelerated */
+.btn-tactile {
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 200ms ease,
+              box-shadow 200ms ease,
+              border-color 200ms ease;
+  will-change: transform;
+  cursor: pointer;
+}
+.btn-tactile:active:not(:disabled) {
+  transform: scale(var(--active-scale));
+}
+
+/* Table row smooth backdrop highlight */
+.table-row-interactive {
+  transition: background-color 150ms ease;
+}
+.table-row-interactive:hover {
+  background-color: var(--row-hover-bg);
+}
+
+/* Sidebar nav item micro-interaction */
+.nav-item-interactive {
+  transition: background-color 150ms ease,
+              color 150ms ease,
+              padding-left 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.nav-item-interactive:hover {
+  padding-left: 14px;
+}
+
+/* Input focus glow */
+.input-interactive {
+  transition: border-color 200ms ease,
+              box-shadow 200ms ease;
+}
+.input-interactive:focus {
+  box-shadow: 0 0 0 3px var(--glow-primary);
+}
+
+/* Horizontal scroll protection for data grids */
+.scroll-guard {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+}
+.scroll-guard::-webkit-scrollbar {
+  height: 6px;
+}
+.scroll-guard::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-guard::-webkit-scrollbar-thumb {
+  background-color: var(--muted);
+  border-radius: 3px;
+}
+
+/* StatusBadge pulse on hover */
+.badge-interactive {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.badge-interactive:hover {
+  transform: scale(1.05);
+}
+
+/* Custom scrollbar for sidebar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--muted);
+  border-radius: 2px;
 }

@@ -43,7 +43,10 @@ export class OwnerParentController {
 
       const parentIds = parents.map((p) => p._id);
       
-      const links = await ParentLinkModel.find({ parentUserId: { $in: parentIds } })
+      const links = await ParentLinkModel.find({ 
+        parentUserId: { $in: parentIds },
+        centerId 
+      })
         .populate("studentId", "name")
         .lean()
         .exec();

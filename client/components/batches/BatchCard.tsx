@@ -1,6 +1,7 @@
 "use client";
 
 import type { Batch } from "@/types/batches/batchTypes";
+import { cn } from "@/lib/utils";
 
 interface BatchCardProps {
   batch: Batch;
@@ -17,6 +18,32 @@ interface BatchCardProps {
 }
 
 const formatDays = (days: string[]) => days.join(" ");
+
+const ActionButton = ({
+  onClick,
+  disabled,
+  children,
+  variant = "default",
+}: {
+  onClick: (event: React.MouseEvent) => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+  variant?: "default" | "primary";
+}) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className={cn(
+      "btn-tactile rounded-lg border px-3 py-2 text-xs font-medium",
+      "disabled:cursor-not-allowed disabled:opacity-50 disabled:pointer-events-none",
+      variant === "primary"
+        ? "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/50 hover:shadow-[0_0_12px_var(--glow-primary)]"
+        : "border-border text-muted-foreground hover:bg-[var(--btn-secondary-hover)] hover:border-[var(--card-hover-border)] hover:text-foreground",
+    )}
+  >
+    {children}
+  </button>
+);
 
 export default function BatchCard({
   batch,
@@ -38,17 +65,17 @@ export default function BatchCard({
           onMarkAttendance(batch);
         }
       }}
-      className={[
-        "rounded-xl border border-border bg-card p-5 shadow-sm transition hover:-translate-y-0.5",
+      className={cn(
+        "interactive-card rounded-xl border border-border bg-card p-5 shadow-sm",
         attendanceDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
-      ].join(" ")}
+      )}
     >
       <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="text-base font-semibold text-foreground">{batch.batchName}</h3>
           <p className="text-xs text-muted-foreground">{batch.classLevel}</p>
         </div>
-        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+        <span className="badge-interactive rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
           {batch.studentCount} Students
         </span>
       </div>
@@ -60,10 +87,11 @@ export default function BatchCard({
           {formatDays(batch.days)}
         </p>
       </div>
-      <div className="mt-4 flex gap-2">
+      {/* Responsive button grid: wraps on mobile, inline on desktop */}
+      <div className="mt-4 flex flex-wrap gap-2">
         {isOwner && (
           <>
-            <button
+            <ActionButton
               onClick={(event) => {
                 event.stopPropagation();
                 if (!actionsDisabled) {
@@ -71,11 +99,10 @@ export default function BatchCard({
                 }
               }}
               disabled={actionsDisabled}
-              className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
             >
               Edit
-            </button>
-            <button
+            </ActionButton>
+            <ActionButton
               onClick={(event) => {
                 event.stopPropagation();
                 if (!actionsDisabled) {
@@ -83,24 +110,22 @@ export default function BatchCard({
                 }
               }}
               disabled={actionsDisabled}
-              className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
             >
               Delete
-            </button>
+            </ActionButton>
           </>
         )}
-        <button
+        <ActionButton
           onClick={(event) => {
             event.stopPropagation();
             onViewStudents(batch);
           }}
-          className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary"
         >
           View Students
-        </button>
+        </ActionButton>
 
         {isOwner ? (
-          <button
+          <ActionButton
             onClick={(event) => {
               event.stopPropagation();
               if (!actionsDisabled && onCreateExam) {
@@ -108,12 +133,12 @@ export default function BatchCard({
               }
             }}
             disabled={actionsDisabled}
-            className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+            variant="primary"
           >
             Create Exam
-          </button>
+          </ActionButton>
         ) : (
-          <button
+          <ActionButton
             onClick={(event) => {
               event.stopPropagation();
               if (!actionsDisabled) {
@@ -121,23 +146,21 @@ export default function BatchCard({
               }
             }}
             disabled={actionsDisabled}
-            className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+            variant="primary"
           >
             Add Exam Mark
-          </button>
+          </ActionButton>
         )}
 
-        <button
+        <ActionButton
           onClick={(event) => {
             event.stopPropagation();
             onViewExams(batch);
           }}
-          className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary"
         >
           View Exams
-        </button>
+        </ActionButton>
       </div>
     </div>
   );
 }
-

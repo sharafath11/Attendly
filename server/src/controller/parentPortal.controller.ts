@@ -16,18 +16,17 @@ export class ParentPortalController {
    */
   async getMyChildren(req: any, res: Response, next: NextFunction) {
     try {
-      const parentUserId = req.parentUserId || req.authUserId;
-      if (!parentUserId) {
+      const parentPhone = req.parentPhone;
+      const centerId = req.parentCenterId;
+      
+      if (!parentPhone || !centerId) {
         return sendResponse(res, StatusCode.UNAUTHORIZED, "Authentication required", false);
       }
 
-      // Find links
-      const links = await ParentLinkModel.find({ parentUserId }).lean().exec();
-      const studentIds = links.map((l) => l.studentId);
-
-      // Find student profiles
+      // Find student profiles by phone and centerId
       const students = await StudentModel.find({
-        _id: { $in: studentIds },
+        parentPhone: { $regex: `${parentPhone}$` },
+        centerId,
         isDeleted: false,
       })
         .populate("batchId", "batchName session")
@@ -45,17 +44,20 @@ export class ParentPortalController {
    */
   async getChildFees(req: any, res: Response, next: NextFunction) {
     try {
-      const parentUserId = req.parentUserId || req.authUserId;
+      const parentPhone = req.parentPhone;
+      const centerId = req.parentCenterId;
       const { studentId } = req.params;
 
-      if (!parentUserId || !studentId) {
+      if (!parentPhone || !centerId || !studentId) {
         return sendResponse(res, StatusCode.BAD_REQUEST, "Missing parameters", false);
       }
 
       // 1. Deep security validation: Check parent-student relationship
-      const relationshipExists = await ParentLinkModel.findOne({
-        parentUserId,
-        studentId,
+      const relationshipExists = await StudentModel.findOne({
+        _id: studentId,
+        centerId,
+        parentPhone: { $regex: `${parentPhone}$` },
+        isDeleted: false
       })
         .lean()
         .exec();
@@ -69,8 +71,8 @@ export class ParentPortalController {
         );
       }
 
-      // 2. Fetch fees
-      const fees = await FeeModel.find({ studentId })
+      // 2. Fetch fees with strict tenant bound
+      const fees = await FeeModel.find({ studentId, centerId })
         .sort({ year: -1, month: -1 })
         .lean()
         .exec();
@@ -86,17 +88,20 @@ export class ParentPortalController {
    */
   async getChildAttendance(req: any, res: Response, next: NextFunction) {
     try {
-      const parentUserId = req.parentUserId || req.authUserId;
+      const parentPhone = req.parentPhone;
+      const centerId = req.parentCenterId;
       const { studentId } = req.params;
 
-      if (!parentUserId || !studentId) {
+      if (!parentPhone || !centerId || !studentId) {
         return sendResponse(res, StatusCode.BAD_REQUEST, "Missing parameters", false);
       }
 
       // 1. Relationship authorization guard
-      const relationshipExists = await ParentLinkModel.findOne({
-        parentUserId,
-        studentId,
+      const relationshipExists = await StudentModel.findOne({
+        _id: studentId,
+        centerId,
+        parentPhone: { $regex: `${parentPhone}$` },
+        isDeleted: false
       })
         .lean()
         .exec();
@@ -110,8 +115,8 @@ export class ParentPortalController {
         );
       }
 
-      // 2. Fetch attendance history
-      const attendance = await AttendanceModel.find({ studentId })
+      // 2. Fetch attendance history with strict tenant bound
+      const attendance = await AttendanceModel.find({ studentId, centerId })
         .sort({ date: -1 })
         .lean()
         .exec();
@@ -133,17 +138,20 @@ export class ParentPortalController {
    */
   async getChildReports(req: any, res: Response, next: NextFunction) {
     try {
-      const parentUserId = req.parentUserId || req.authUserId;
+      const parentPhone = req.parentPhone;
+      const centerId = req.parentCenterId;
       const { studentId } = req.params;
 
-      if (!parentUserId || !studentId) {
+      if (!parentPhone || !centerId || !studentId) {
         return sendResponse(res, StatusCode.BAD_REQUEST, "Missing parameters", false);
       }
 
       // 1. Relationship authorization guard
-      const relationshipExists = await ParentLinkModel.findOne({
-        parentUserId,
-        studentId,
+      const relationshipExists = await StudentModel.findOne({
+        _id: studentId,
+        centerId,
+        parentPhone: { $regex: `${parentPhone}$` },
+        isDeleted: false
       })
         .lean()
         .exec();
@@ -157,10 +165,10 @@ export class ParentPortalController {
         );
       }
 
-      // Dynamically summarize reports/performance from attendance and fees status
+      // Dynamically summarize reports/performance from attendance and fees status with strict tenant bounds
       const [attendance, fees] = await Promise.all([
-        AttendanceModel.find({ studentId }).lean().exec(),
-        FeeModel.find({ studentId }).lean().exec(),
+        AttendanceModel.find({ studentId, centerId }).lean().exec(),
+        FeeModel.find({ studentId, centerId }).lean().exec(),
       ]);
 
       const totalClasses = attendance.length;
@@ -222,17 +230,20 @@ export class ParentPortalController {
    */
   async getChildExams(req: any, res: Response, next: NextFunction) {
     try {
-      const parentUserId = req.parentUserId || req.authUserId;
+      const parentPhone = req.parentPhone;
+      const centerId = req.parentCenterId;
       const studentId = req.params.studentId;
 
-      if (!parentUserId || !studentId) {
+      if (!parentPhone || !centerId || !studentId) {
         return sendResponse(res, StatusCode.BAD_REQUEST, "Missing identifiers", false);
       }
 
       // Security check: validate that student belongs to parent
-      const parentLink = await ParentLinkModel.findOne({
-        parentUserId,
-        studentId,
+      const parentLink = await StudentModel.findOne({
+        _id: studentId,
+        centerId,
+        parentPhone: { $regex: `${parentPhone}$` },
+        isDeleted: false
       })
         .lean()
         .exec();
@@ -246,8 +257,8 @@ export class ParentPortalController {
         );
       }
 
-      // Fetch student marks and populate exam details without leaking other students' data
-      const studentMarks = await MarkModel.find({ studentId })
+      // Fetch student marks and populate exam details strictly bound to tenant
+      const studentMarks = await MarkModel.find({ studentId, centerId })
         .populate({
           path: "examId",
           select: "examName subject totalMarks date",

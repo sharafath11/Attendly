@@ -32,8 +32,7 @@ router.post("/auth/verify-otp", parentController.verifyOtp.bind(parentController
 router.post("/auth/logout", parentController.logout.bind(parentController));
 router.post("/auth/refresh-token", parentController.refresh.bind(parentController));
 
-// Enforce tenantGuard for all portal routes
-router.use(tenantGuard);
+// Enforce tenantGuard removed; requireParentAuth handles tenant boundaries securely.
 
 // Portal endpoints
 router.get("/me", requireParentAuth, parentController.me.bind(parentController));

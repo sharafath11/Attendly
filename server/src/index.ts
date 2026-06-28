@@ -29,6 +29,7 @@ import paymentRoutes from "./routes/payment.Routes";
 import whatsappRoutes from "./routes/whatsapp.Routes";
 import reportsRoutes from "./routes/reports.Routes";
 import examRoutes from "./modules/exam/exam.routes";
+import supportRoutes from "./routes/support.Routes";
 import { initWhatsApp, destroyAllWAClients } from "./services/whatsappAuth.service";
 import { startWhatsAppWorker, stopWhatsAppWorker } from "./services/whatsapp.worker";
 import "./models/parentLink.model";
@@ -70,8 +71,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 app.use(attachCenterContext);
 connectDB();
@@ -116,6 +117,7 @@ app.use("/api/activity-logs", activityLogRoutes);
 app.use("/api/whatsapp", whatsappRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/reports", reportsRoutes);
+app.use("/api/support", supportRoutes);
 app.use("/api", examRoutes);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

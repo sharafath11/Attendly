@@ -220,10 +220,10 @@ export class AuthController implements IAuthController {
 
   async updateProfile(req: Request, res: Response): Promise<void> {
     try {
-      const { name, phone, centerName, mediums, sessions } = req.body;
+      const { name, phone, centerName, mediums, sessions, address } = req.body;
       const userId = (req as any).user.id;
 
-      await this._authServices.updateProfile(userId, name, phone, centerName, mediums, sessions);
+      await this._authServices.updateProfile(userId, name, phone, centerName, mediums, sessions, address);
 
       sendResponse(res, StatusCode.OK, "Profile updated successfully", true);
     } catch (error) {

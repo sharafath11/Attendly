@@ -88,12 +88,7 @@ export default function ParentLoginPage() {
         showErrorToast((res as { msg?: string })?.msg || "Could not send code");
         return;
       }
-      const payload = (res as { data?: Record<string, unknown> }).data ?? {};
-      if (typeof payload.devOtp === "string") {
-        showSuccessToast(`Dev OTP: ${payload.devOtp}`);
-      } else {
-        showSuccessToast("Check WhatsApp for your login code.");
-      }
+      showSuccessToast("Check WhatsApp for your login code.");
       setStep("otp");
     } catch {
       setLoading(false);
@@ -110,8 +105,7 @@ export default function ParentLoginPage() {
         return;
       }
       showSuccessToast("Welcome back");
-      router.replace("/parent");
-      router.refresh();
+      window.location.href = "/parent";
     } catch {
       setLoading(false);
     }
@@ -135,7 +129,7 @@ export default function ParentLoginPage() {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               >
                 <span className={centerName ? "text-foreground" : "text-muted-foreground"}>
-                  {centerName || "Search center name..."}
+                  {centerName || "Search by center name or city..."}
                 </span>
                 <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </div>
@@ -147,7 +141,7 @@ export default function ParentLoginPage() {
                     <input
                       autoFocus
                       className="w-full bg-transparent outline-none text-sm placeholder:text-muted-foreground"
-                      placeholder="Type center name..."
+                      placeholder="Type name or city..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -216,6 +210,9 @@ export default function ParentLoginPage() {
                 onChange={(e) => setOtp(e.target.value)}
               />
             </label>
+            <p className="text-xs text-muted-foreground text-center">
+              This code is valid for 5 minutes.
+            </p>
             <Button type="button" className="w-full" size="lg" isLoading={loading} onClick={verify}>
               Verify & Login
             </Button>

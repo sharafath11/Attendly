@@ -270,7 +270,7 @@ async signup(data: { name: string; email: string; password: string }):Promise<vo
     await this._authRepo.update(userId, { password: hashedPassword });
   }
 
-  async updateProfile(userId: string, name?: string, phone?: string, centerName?: string, mediums?: string[], sessions?: string[]): Promise<void> {
+  async updateProfile(userId: string, name?: string, phone?: string, centerName?: string, mediums?: string[], sessions?: string[], address?: string): Promise<void> {
     const user = await this._authRepo.findById(userId);
     if (!user) throwError("User not found", StatusCode.NOT_FOUND);
 
@@ -288,6 +288,7 @@ async signup(data: { name: string; email: string; password: string }):Promise<vo
       if (centerName !== undefined) centerUpdate.name = centerName;
       if (mediums !== undefined) centerUpdate.mediums = mediums;
       if (sessions !== undefined) centerUpdate.sessions = sessions;
+      if (address !== undefined) centerUpdate.address = address;
       if (Object.keys(centerUpdate).length > 0) {
         await CenterModel.updateOne(
           { _id: targetCenterId },

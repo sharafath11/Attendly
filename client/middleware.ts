@@ -10,9 +10,12 @@ export function middleware(request: NextRequest) {
   const refreshToken = request.cookies.get("refreshToken")?.value
   const adminToken = request.cookies.get("adminToken")?.value
   const adminRefreshToken = request.cookies.get("adminRefreshToken")?.value
+  const parentToken = request.cookies.get("parentToken")?.value
+  const parentRefreshToken = request.cookies.get("parentRefreshToken")?.value
 
   const isAuthenticated = Boolean(token || refreshToken)
   const isAdminAuthenticated = Boolean(adminToken || adminRefreshToken)
+  const isParentAuthenticated = Boolean(parentToken || parentRefreshToken)
 
   const isAuthPage = pathname === "/login" || pathname === "/register" || pathname.startsWith("/forgot-password")
   const isPublicPage = pathname === "/"
@@ -49,13 +52,13 @@ export function middleware(request: NextRequest) {
   // 2. Redirection for Parent Pages
   if (isParentPage) {
     if (isParentLogin) {
-      if (isAuthenticated) {
+      if (isParentAuthenticated) {
         return NextResponse.redirect(new URL("/parent", request.url))
       }
       return NextResponse.next()
     }
 
-    if (!isAuthenticated) {
+    if (!isParentAuthenticated) {
       return NextResponse.redirect(new URL("/parent/login", request.url))
     }
     return NextResponse.next()

@@ -8,7 +8,7 @@ import { useParentContext } from "@/context/ParentContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ParentHomePage() {
-  const { selectedChildId, selectedChild, isLoading: contextLoading } = useParentContext();
+  const { childrenList, selectedChildId, selectedChild, isLoading: contextLoading } = useParentContext();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["parent-child-report", selectedChildId],
@@ -64,6 +64,13 @@ export default function ParentHomePage() {
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
+      {childrenList.length > 1 && (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary flex justify-between items-center shadow-sm">
+          <span>You have <strong>{childrenList.length}</strong> children linked.</span>
+          <span className="text-xs opacity-80">Use the top menu to switch</span>
+        </div>
+      )}
+
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-5">
           <GraduationCap className="h-24 w-24" />

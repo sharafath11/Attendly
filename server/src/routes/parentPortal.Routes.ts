@@ -1,32 +1,32 @@
 import express from "express";
-import { requireRole } from "../shared/middleware/role.middleware";
+import { requireParentAuth } from "../shared/middleware/parent.middleware";
 import { ParentPortalController } from "../controller/parentPortal.controller";
 
 const router = express.Router();
 const controller = new ParentPortalController();
 
-// All parent portal routes require the authenticated "parent" role
+// All parent portal routes require the authenticated "parent" role via parentToken
 router.get(
   "/my-children",
-  requireRole(["parent"]),
+  requireParentAuth,
   controller.getMyChildren.bind(controller)
 );
 
 router.get(
   "/child/:studentId/fees",
-  requireRole(["parent"]),
+  requireParentAuth,
   controller.getChildFees.bind(controller)
 );
 
 router.get(
   "/child/:studentId/attendance",
-  requireRole(["parent"]),
+  requireParentAuth,
   controller.getChildAttendance.bind(controller)
 );
 
 router.get(
   "/child/:studentId/reports",
-  requireRole(["parent"]),
+  requireParentAuth,
   controller.getChildReports.bind(controller)
 );
 

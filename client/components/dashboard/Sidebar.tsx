@@ -261,7 +261,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
           </div>
           <button
             onClick={onToggle}
-            className="hidden rounded-md p-2 text-muted-foreground hover:bg-sidebar-accent lg:inline-flex"
+            className="btn-tactile hidden rounded-lg p-2 text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground lg:inline-flex"
             aria-label="Toggle sidebar"
           >
             <span className="text-lg">⇔</span>
@@ -283,7 +283,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
                   <button
                     onClick={() => handleGroupToggle(item.label)}
                     className={cn(
-                      "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      "nav-item-interactive flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium",
                       hasActiveSub
                         ? "bg-sidebar-accent/50 text-sidebar-foreground"
                         : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
@@ -307,7 +307,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
                             key={sub.label}
                             href={sub.href}
                             className={cn(
-                              "block rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                              "nav-item-interactive block rounded-md px-3 py-1.5 text-xs font-medium",
                               active
                                 ? "bg-sidebar-accent text-sidebar-foreground"
                                 : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
@@ -333,7 +333,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
                 key={item.label}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "nav-item-interactive flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium",
                   active
                     ? "bg-sidebar-accent text-sidebar-foreground"
                     : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
@@ -354,7 +354,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
           )}
           <button
             onClick={handleLogout}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            className="btn-tactile nav-item-interactive flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
           >
             <LogOut className="h-4 w-4" />
             {!collapsed && <span>Logout</span>}

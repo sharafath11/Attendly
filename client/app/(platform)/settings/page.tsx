@@ -33,6 +33,7 @@ export default function SettingsPage() {
 
   const [formData, setFormData] = useState({
     centerName: "",
+    address: "",
     name: "",
     email: "",
     phone: "",
@@ -71,6 +72,7 @@ export default function SettingsPage() {
       setFormData((prev) => ({
         ...prev,
         centerName: centerResponse.name || "",
+        address: centerResponse.address || "",
         mediums: centerResponse.mediums?.length > 0 ? centerResponse.mediums : ["English", "Malayalam"],
         sessions: centerResponse.sessions?.length > 0 ? centerResponse.sessions : ["Morning", "Evening"],
       }));
@@ -94,6 +96,7 @@ export default function SettingsPage() {
         name: formData.name,
         phone: formData.phone,
         centerName: formData.centerName,
+        address: formData.address,
         mediums: formData.mediums,
         sessions: formData.sessions,
       });
@@ -228,11 +231,19 @@ export default function SettingsPage() {
             
             <div className="grid gap-4">
               {isOwner && (
-                <FormInput
-                  label="Center Name"
-                  value={formData.centerName}
-                  onChange={(e) => setFormData({ ...formData, centerName: e.target.value })}
-                />
+                <>
+                  <FormInput
+                    label="Center Name"
+                    value={formData.centerName}
+                    onChange={(e) => setFormData({ ...formData, centerName: e.target.value })}
+                  />
+                  <FormInput
+                    label="City / Area"
+                    placeholder="e.g. Kozhikode, Kerala"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  />
+                </>
               )}
               <FormInput
                 label="Full Name"

@@ -60,20 +60,20 @@ export default function Modal({ open, onClose, title, children }: ModalProps) {
         }
       }}
     >
-      <div className="absolute inset-0 bg-black/60" aria-hidden="true" ref={overlayRef} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" aria-hidden="true" ref={overlayRef} />
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-xl"
+        className="relative w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-2xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">{title}</h2>
           <button
             onClick={() => onCloseRef.current()}
-            className="rounded-md p-2 text-muted-foreground hover:bg-secondary"
+            className="btn-tactile rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
             aria-label="Close"
           >
             ✕

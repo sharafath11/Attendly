@@ -31,9 +31,10 @@ export default function ParentUpdatesPage() {
       if (!res?.ok) throw new Error("unauthorized");
       return res.data as {
         _id: string;
-        type: string;
-        channel: string;
-        status: string;
+        type?: string;
+        title?: string;
+        channel?: string;
+        status?: string;
         message: string;
         studentId?: { name: string };
         createdAt: string;
@@ -87,14 +88,14 @@ export default function ParentUpdatesPage() {
             <li key={u._id} className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:border-primary/30">
               <div className="flex items-start gap-3">
                 <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${kindStyles[u.type] ?? kindStyles.system}`}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${kindStyles[u.type || "system"] ?? kindStyles.system}`}
                 >
-                  {kindIcons[u.type] ?? kindIcons.system}
+                  {kindIcons[u.type || "system"] ?? kindIcons.system}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      {u.type.replace(/_/g, " ")} {u.studentId ? `• ${u.studentId.name}` : ""}
+                      {(u.type || u.title || "notification").replace(/_/g, " ")} {u.studentId ? `• ${u.studentId.name}` : ""}
                     </p>
                     <span className="text-[10px] text-muted-foreground">
                       {new Date(u.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
